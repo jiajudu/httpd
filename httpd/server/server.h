@@ -10,8 +10,8 @@ public:
     Server() {
     }
     virtual void run() = 0;
-    virtual ssize_t send(shared_ptr<Socket> conn, char *buf, uint64_t size) = 0;
-    function<void(char *buf, uint64_t size,
-                  function<ssize_t(char *buf, uint64_t size)> send)>
+    virtual ssize_t send(shared_ptr<Socket> conn, char *buf, ssize_t size) = 0;
+    function<void(char *buf, ssize_t size,
+                  function<ssize_t(char *buf, ssize_t size)> send)>
         onMessage;
 };

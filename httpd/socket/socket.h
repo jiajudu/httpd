@@ -12,9 +12,11 @@ public:
     int bind(string &ip, uint16_t port);
     int listen(int backlog);
     shared_ptr<Socket> accept();
-    ssize_t recv(char *buf, uint64_t len, bool dontWait = false,
+    ssize_t _recv(char *buf, ssize_t len);
+    ssize_t recv(char *buf, ssize_t len, bool dontWait = false,
                  bool waitAll = false, bool peek = false, bool oob = false);
-    ssize_t send(char *buf, uint64_t len, bool dontWait = false,
+    ssize_t _send(char *buf, ssize_t len);
+    ssize_t send(char *buf, ssize_t len, bool dontWait = false,
                  bool more = false, bool oob = false);
     static const int domainINET;
     static const int domainINET6;

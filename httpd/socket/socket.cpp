@@ -72,7 +72,10 @@ shared_ptr<Socket> Socket::accept() {
     }
     return ret;
 }
-ssize_t Socket::recv(char *buf, uint64_t len, bool dontWait, bool waitAll,
+ssize_t Socket::_recv(char *buf, ssize_t len) {
+    return recv(buf, len);
+}
+ssize_t Socket::recv(char *buf, ssize_t len, bool dontWait, bool waitAll,
                      bool peek, bool oob) {
     int flag = 0;
     if (dontWait) {
@@ -93,7 +96,10 @@ ssize_t Socket::recv(char *buf, uint64_t len, bool dontWait, bool waitAll,
     }
     return ret;
 }
-ssize_t Socket::send(char *buf, uint64_t len, bool dontWait, bool more,
+ssize_t Socket::_send(char *buf, ssize_t len) {
+    return send(buf, len);
+}
+ssize_t Socket::send(char *buf, ssize_t len, bool dontWait, bool more,
                      bool oob) {
     int flag = 0;
     if (dontWait) {

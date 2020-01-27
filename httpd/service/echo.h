@@ -9,8 +9,8 @@ using std::shared_ptr;
 class Echo {
 public:
     Echo(shared_ptr<Server> server_);
-    void onMessage(char *buf, uint64_t size,
-                   function<ssize_t(char *buf, uint64_t size)> send);
+    void onMessage(char *buf, ssize_t size,
+                   function<ssize_t(char *buf, ssize_t size)> send);
 
 private:
     shared_ptr<Server> server;
