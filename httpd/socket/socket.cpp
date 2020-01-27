@@ -9,6 +9,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+using std::make_shared;
 const int Socket::domainINET = AF_INET;
 const int Socket::domainINET6 = AF_INET6;
 Socket::Socket(int domain_, bool nonBlock_, bool closeExec_)
@@ -28,7 +29,7 @@ Socket::Socket(int domain_, bool nonBlock_, bool closeExec_)
 Socket::Socket(int fd_, int domain_, bool nonBlock_, bool closeExec_)
     : domain(domain_), nonBlock(nonBlock_), closeExec(closeExec_), fd(fd_) {
 }
-int Socket::bind(std::string &ip, uint16_t port) {
+int Socket::bind(string &ip, uint16_t port) {
     int ret = 0;
     if (domain == domainINET) {
         struct sockaddr_in sockaddr;
@@ -54,8 +55,8 @@ int Socket::listen(int backlog) {
     }
     return ret;
 }
-std::shared_ptr<Socket> Socket::accept() {
-    std::shared_ptr<Socket> ret;
+shared_ptr<Socket> Socket::accept() {
+    shared_ptr<Socket> ret;
     if (domain == domainINET) {
         struct sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
@@ -64,7 +65,7 @@ std::shared_ptr<Socket> Socket::accept() {
         if (connfd < 0) {
             fatalError();
         }
-        ret = std::make_shared<Socket>(connfd, domain, nonBlock, closeExec);
+        ret = make_shared<Socket>(connfd, domain, nonBlock, closeExec);
     } else if (domain == domainINET6) {
         write(1, "IPv6 not implemented.\n", 23);
         exit(1);
@@ -87,6 +88,9 @@ ssize_t Socket::recv(char *buf, uint64_t len, bool dontWait, bool waitAll,
         flag |= MSG_OOB;
     }
     ssize_t ret = ::recv(fd, buf, len, flag);
+    if (ret < 0) {
+        fatalError();
+    }
     return ret;
 }
 ssize_t Socket::send(char *buf, uint64_t len, bool dontWait, bool more,
@@ -102,6 +106,9 @@ ssize_t Socket::send(char *buf, uint64_t len, bool dontWait, bool more,
         flag |= MSG_OOB;
     }
     ssize_t ret = ::send(fd, buf, len, flag);
+    if (ret < 0) {
+        fatalError();
+    }
     return ret;
 }
 Socket::~Socket() {

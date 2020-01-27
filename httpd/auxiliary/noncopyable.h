@@ -1,8 +1,8 @@
 #pragma once
-class noncopyable {
+class Noncopyable {
 public:
-    noncopyable() {
+    Noncopyable() {
     }
-    noncopyable(const noncopyable &) = delete;
-    noncopyable &operator=(const noncopyable &) = delete;
+    Noncopyable(const Noncopyable &) = delete;
+    Noncopyable &operator=(const Noncopyable &) = delete;
 };

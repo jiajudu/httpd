@@ -1,14 +1,17 @@
+#pragma once
 #include "auxiliary/noncopyable.h"
 #include <memory>
 #include <string>
-class Socket : noncopyable {
+using std::shared_ptr;
+using std::string;
+class Socket : Noncopyable {
 public:
     Socket(int domain_, bool nonBlock_, bool closeExec_);
     Socket(int fd_, int domain_, bool nonBlock_, bool closeExec_);
     ~Socket();
-    int bind(std::string &ip, uint16_t port);
+    int bind(string &ip, uint16_t port);
     int listen(int backlog);
-    std::shared_ptr<Socket> accept();
+    shared_ptr<Socket> accept();
     ssize_t recv(char *buf, uint64_t len, bool dontWait = false,
                  bool waitAll = false, bool peek = false, bool oob = false);
     ssize_t send(char *buf, uint64_t len, bool dontWait = false,

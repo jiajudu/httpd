@@ -1,3 +1,4 @@
 #pragma once
 #include <string>
-uint32_t inet_ston(std::string &s);
+using std::string;
+uint32_t inet_ston(string &s);
