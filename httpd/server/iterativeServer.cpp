@@ -18,5 +18,6 @@ void IterativeServer::run() {
             onMessage(buf, size, bind(&Socket::_send, conn, _1, _2));
             size = conn->recv(buf, 4096);
         }
+        conn->close();
     }
 }

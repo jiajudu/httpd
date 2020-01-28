@@ -8,10 +8,10 @@ class Socket : Noncopyable {
 public:
     Socket(int domain_, bool nonBlock_, bool closeExec_);
     Socket(int fd_, int domain_, bool nonBlock_, bool closeExec_);
-    ~Socket();
     int bind(string &ip, uint16_t port);
     int listen(int backlog);
     shared_ptr<Socket> accept();
+    int close();
     ssize_t _recv(char *buf, ssize_t len);
     ssize_t recv(char *buf, ssize_t len, bool dontWait = false,
                  bool waitAll = false, bool peek = false, bool oob = false);

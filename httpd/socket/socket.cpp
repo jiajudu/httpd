@@ -117,9 +117,10 @@ ssize_t Socket::send(char *buf, ssize_t len, bool dontWait, bool more,
     }
     return ret;
 }
-Socket::~Socket() {
-    int ret = close(fd);
+int Socket::close() {
+    int ret = ::close(fd);
     if (ret < 0) {
         fatalError();
     }
+    return ret;
 }
