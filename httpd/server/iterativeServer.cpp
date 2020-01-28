@@ -4,12 +4,13 @@ using std::make_shared;
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
-IterativeServer::IterativeServer(string &ip, uint16_t port) {
+IterativeServer::IterativeServer(string &_ip, uint16_t _port)
+    : ip(_ip), port(_port) {
+}
+void IterativeServer::run() {
     listenSocket = make_shared<Socket>(Socket::domainINET, false, false);
     listenSocket->bind(ip, port);
     listenSocket->listen(10);
-}
-void IterativeServer::run() {
     while (true) {
         shared_ptr<Socket> conn = listenSocket->accept();
         char buf[4096];

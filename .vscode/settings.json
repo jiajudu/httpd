@@ -1,6 +1,9 @@
 {
     "editor.formatOnSave": true,
     "files.associations": {
-        "functional": "cpp"
+        "functional": "cpp",
+        "chrono": "cpp",
+        "random": "cpp",
+        "limits": "cpp"
     }
 }

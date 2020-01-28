@@ -20,6 +20,11 @@ public:
                  bool more = false, bool oob = false);
     static const int domainINET;
     static const int domainINET6;
+    static const int domainLocal;
+    int getDomain() const;
+    bool getNonBlock() const;
+    bool getCloseExec() const;
+    int getFd() const;
 
 private:
     int domain;

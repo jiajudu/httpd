@@ -12,6 +12,8 @@ public:
     void run();
 
 private:
+    string ip;
+    uint16_t port;
     shared_ptr<Socket> listenSocket;
     void threadRun(shared_ptr<Socket> conn);
 };

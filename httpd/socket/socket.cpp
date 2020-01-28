@@ -12,6 +12,7 @@
 using std::make_shared;
 const int Socket::domainINET = AF_INET;
 const int Socket::domainINET6 = AF_INET6;
+const int Socket::domainLocal = AF_LOCAL;
 Socket::Socket(int domain_, bool nonBlock_, bool closeExec_)
     : domain(domain_), nonBlock(nonBlock_), closeExec(closeExec_) {
     int type = SOCK_STREAM;
@@ -123,4 +124,16 @@ int Socket::close() {
         fatalError();
     }
     return ret;
+}
+int Socket::getDomain() const {
+    return domain;
+}
+bool Socket::getNonBlock() const {
+    return nonBlock;
+}
+bool Socket::getCloseExec() const {
+    return closeExec;
+}
+int Socket::getFd() const {
+    return fd;
 }
