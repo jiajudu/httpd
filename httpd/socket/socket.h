@@ -1,9 +1,8 @@
 #pragma once
 #include "auxiliary/noncopyable.h"
+#include "auxiliary/std.h"
 #include <memory>
 #include <string>
-using std::shared_ptr;
-using std::string;
 class Socket : Noncopyable {
 public:
     Socket(int domain_, bool nonBlock_, bool closeExec_);

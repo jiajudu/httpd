@@ -4,7 +4,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-using std::function;
 class Server {
 public:
     Server() {

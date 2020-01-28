@@ -9,7 +9,6 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
-using std::make_shared;
 const int Socket::domainINET = AF_INET;
 const int Socket::domainINET6 = AF_INET6;
 const int Socket::domainLocal = AF_LOCAL;

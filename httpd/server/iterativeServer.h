@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-using std::function;
 class IterativeServer : public Server {
 public:
     IterativeServer(string &ip, uint16_t port);

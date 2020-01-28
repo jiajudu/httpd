@@ -1,9 +1,4 @@
 #include "server/iterativeServer.h"
-using std::bind;
-using std::make_shared;
-using std::placeholders::_1;
-using std::placeholders::_2;
-using std::placeholders::_3;
 IterativeServer::IterativeServer(string &_ip, uint16_t _port)
     : ip(_ip), port(_port) {
 }

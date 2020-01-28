@@ -4,12 +4,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-using std::bind;
-using std::make_shared;
-using std::max;
-using std::placeholders::_1;
-using std::placeholders::_2;
-using std::placeholders::_3;
 ChildProcess::ChildProcess(int _fd) : fd(_fd), busy(false) {
 }
 PreForkServer::PreForkServer(string &_ip, uint16_t _port, int _numProcess)
@@ -46,7 +40,6 @@ void PreForkServer::run() {
     while (true) {
         shared_ptr<Socket> conn = listenSocket->accept();
         size_t childIndex = getAvailableProcess();
-        printf("sendconn %d\n", conn->getFd());
         sendConn(childs[childIndex].fd, conn);
         childs[childIndex].busy = true;
         conn->close();
@@ -87,7 +80,6 @@ size_t PreForkServer::getAvailableProcess() {
 void PreForkServer::childMain(int fd) {
     while (true) {
         shared_ptr<Socket> conn = recvConn(fd);
-        printf("recvconn %d\n", conn->getFd());
         char buf[4096];
         ssize_t size = conn->recv(buf, 4096);
         while (size > 0) {

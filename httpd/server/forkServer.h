@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-using std::function;
 class ForkServer : public Server {
 public:
     ForkServer(string &ip, uint16_t port);

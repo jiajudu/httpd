@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-using std::function;
 class ThreadedServer : public Server {
 public:
     ThreadedServer(string &ip, uint16_t port);

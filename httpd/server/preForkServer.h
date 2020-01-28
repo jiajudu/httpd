@@ -6,9 +6,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-using std::function;
-using std::pair;
-using std::vector;
 class ChildProcess {
 public:
     ChildProcess(int _fd);

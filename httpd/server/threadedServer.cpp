@@ -2,12 +2,6 @@
 #include "auxiliary/error.h"
 #include <thread>
 #include <unistd.h>
-using std::bind;
-using std::make_shared;
-using std::thread;
-using std::placeholders::_1;
-using std::placeholders::_2;
-using std::placeholders::_3;
 ThreadedServer::ThreadedServer(string &_ip, uint16_t _port)
     : ip(_ip), port(_port) {
 }

@@ -4,8 +4,6 @@
 #include "socket/socket.h"
 #include <functional>
 #include <memory>
-using std::function;
-using std::shared_ptr;
 class Echo {
 public:
     Echo(shared_ptr<Server> server_);
