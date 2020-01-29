@@ -25,9 +25,17 @@ Socket::Socket(int domain_, bool nonBlock_, bool closeExec_)
     if (fd < 0) {
         fatalError();
     }
+    if (nonBlock) {
+        readBuf = make_shared<vector<char>>();
+        writeBuf = make_shared<vector<char>>();
+    }
 }
 Socket::Socket(int fd_, int domain_, bool nonBlock_, bool closeExec_)
     : domain(domain_), nonBlock(nonBlock_), closeExec(closeExec_), fd(fd_) {
+    if (nonBlock) {
+        readBuf = make_shared<vector<char>>();
+        writeBuf = make_shared<vector<char>>();
+    }
 }
 int Socket::bind(string &ip, uint16_t port) {
     int ret = 0;
@@ -72,11 +80,11 @@ shared_ptr<Socket> Socket::accept() {
     }
     return ret;
 }
-ssize_t Socket::_recv(char *buf, ssize_t len) {
-    return recv(buf, len);
+ssize_t Socket::recv(vector<char> &buf, ssize_t size) {
+    return _recv(buf, size, false, false, false, false);
 }
-ssize_t Socket::recv(char *buf, ssize_t len, bool dontWait, bool waitAll,
-                     bool peek, bool oob) {
+ssize_t Socket::_recv(vector<char> &buf, ssize_t size, bool dontWait,
+                      bool waitAll, bool peek, bool oob) {
     int flag = 0;
     if (dontWait) {
         flag |= MSG_DONTWAIT;
@@ -90,17 +98,17 @@ ssize_t Socket::recv(char *buf, ssize_t len, bool dontWait, bool waitAll,
     if (oob) {
         flag |= MSG_OOB;
     }
-    ssize_t ret = ::recv(fd, buf, len, flag);
+    ssize_t ret = ::recv(fd, &buf[0], size, flag);
     if (ret < 0) {
         fatalError();
     }
     return ret;
 }
-ssize_t Socket::_send(char *buf, ssize_t len) {
-    return send(buf, len);
+ssize_t Socket::send(vector<char> &buf, ssize_t size) {
+    return _send(buf, size, false, false, false);
 }
-ssize_t Socket::send(char *buf, ssize_t len, bool dontWait, bool more,
-                     bool oob) {
+ssize_t Socket::_send(vector<char> &buf, ssize_t size, bool dontWait, bool more,
+                      bool oob) {
     int flag = 0;
     if (dontWait) {
         flag |= MSG_DONTWAIT;
@@ -111,7 +119,7 @@ ssize_t Socket::send(char *buf, ssize_t len, bool dontWait, bool more,
     if (oob) {
         flag |= MSG_OOB;
     }
-    ssize_t ret = ::send(fd, buf, len, flag);
+    ssize_t ret = ::send(fd, &buf[0], size, flag);
     if (ret < 0) {
         fatalError();
     }

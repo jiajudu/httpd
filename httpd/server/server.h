@@ -9,7 +9,7 @@ public:
     Server() {
     }
     virtual void run() = 0;
-    function<void(char *buf, ssize_t size,
-                  function<ssize_t(char *buf, ssize_t size)> send)>
+    function<void(vector<char> &buf, ssize_t size,
+                  function<ssize_t(vector<char> &buf, ssize_t size)> send)>
         onMessage;
 };

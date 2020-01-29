@@ -11,12 +11,8 @@ public:
     int listen(int backlog);
     shared_ptr<Socket> accept();
     int close();
-    ssize_t _recv(char *buf, ssize_t len);
-    ssize_t recv(char *buf, ssize_t len, bool dontWait = false,
-                 bool waitAll = false, bool peek = false, bool oob = false);
-    ssize_t _send(char *buf, ssize_t len);
-    ssize_t send(char *buf, ssize_t len, bool dontWait = false,
-                 bool more = false, bool oob = false);
+    ssize_t recv(vector<char> &buf, ssize_t size);
+    ssize_t send(vector<char> &buf, ssize_t size);
     static const int domainINET;
     static const int domainINET6;
     static const int domainLocal;
@@ -30,4 +26,9 @@ private:
     bool nonBlock;
     bool closeExec;
     int fd;
+    shared_ptr<vector<char>> readBuf;
+    shared_ptr<vector<char>> writeBuf;
+    ssize_t _recv(vector<char> &buf, ssize_t size, bool dontWait, bool waitAll, bool peek,
+                  bool oob);
+    ssize_t _send(vector<char> &buf, ssize_t size, bool dontWait, bool more, bool oob);
 };

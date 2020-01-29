@@ -32,12 +32,11 @@ void ReactorServer::run() {
                     shared_ptr<Socket> conn = listenSocket->accept();
                     sockets[conn->getFd()] = conn;
                 } else if (sockets.find(pollfd.fd) != sockets.end()) {
-                    char buf[4096];
+                    vector<char> buf(4096);
                     shared_ptr<Socket> conn = sockets[pollfd.fd];
-                    ssize_t size = conn->recv(buf, 4096);
+                    ssize_t size = conn->recv(buf, buf.size());
                     if (size > 0) {
-                        onMessage(buf, size,
-                                  bind(&Socket::_send, conn, _1, _2));
+                        onMessage(buf, size, bind(&Socket::send, conn, _1, _2));
                     } else {
                         sockets.erase(pollfd.fd);
                         conn->close();

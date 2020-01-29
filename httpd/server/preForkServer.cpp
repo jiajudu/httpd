@@ -80,14 +80,14 @@ size_t PreForkServer::getAvailableProcess() {
 void PreForkServer::childMain(int fd) {
     while (true) {
         shared_ptr<Socket> conn = recvConn(fd);
-        char buf[4096];
-        ssize_t size = conn->recv(buf, 4096);
+        vector<char> buf(4096);
+        ssize_t size = conn->recv(buf, buf.size());
         while (size > 0) {
-            onMessage(buf, size, bind(&Socket::_send, conn, _1, _2));
-            size = conn->recv(buf, 4096);
+            onMessage(buf, size, bind(&Socket::send, conn, _1, _2));
+            size = conn->recv(buf, buf.size());
         }
         conn->close();
-        write(fd, buf, 1);
+        write(fd, &buf[0], 1);
     }
 }
 void PreForkServer::sendConn(int fd, shared_ptr<Socket> conn) {
