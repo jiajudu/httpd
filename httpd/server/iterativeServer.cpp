@@ -1,18 +1,18 @@
 #include "server/iterativeServer.h"
 IterativeServer::IterativeServer(string &_ip, uint16_t _port)
-    : ip(_ip), port(_port) {
+    : Server(_ip, _port) {
 }
 void IterativeServer::run() {
-    listenSocket = make_shared<Socket>(Socket::domainINET, false, false);
-    listenSocket->bind(ip, port);
-    listenSocket->listen(10);
+    listener = make_shared<Listener>(ip, port, 10);
     while (true) {
-        shared_ptr<Socket> conn = listenSocket->accept();
-        vector<char> buf(4096);
-        ssize_t size = conn->recv(buf, buf.size());
+        shared_ptr<Connection> conn = listener->accept();
+        string buf(4096, 0);
+        size_t size = conn->recv(buf);
         while (size > 0) {
-            onMessage(buf, size, bind(&Socket::send, conn, _1, _2));
-            size = conn->recv(buf, buf.size());
+            string message(buf.begin(), buf.begin() + size);
+            onMessage(message,
+                      [&](string &s) -> size_t { return conn->send(s); });
+            size = conn->recv(buf);
         }
         conn->close();
     }

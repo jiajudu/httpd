@@ -1,11 +1,15 @@
 #include "auxiliary/error.h"
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-void fatalError() {
+void syscall_error() {
     char *errorStr = strerror(errno);
-    write(1, errorStr, strlen(errorStr));
-    write(1, "\n", 1);
+    printf("syscall error %s\n", errorStr);
+    exit(1);
+}
+void agreement_error(const char *s) {
+    printf("agreement error %s\n", s);
     exit(1);
 }

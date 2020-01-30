@@ -9,9 +9,4 @@ class ForkServer : public Server {
 public:
     ForkServer(string &ip, uint16_t port);
     void run();
-
-private:
-    string ip;
-    uint16_t port;
-    shared_ptr<Socket> listenSocket;
 };

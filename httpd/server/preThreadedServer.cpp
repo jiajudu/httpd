@@ -6,7 +6,7 @@
 #include <unistd.h>
 PreThreadedServer::PreThreadedServer(string &_ip, uint16_t _port,
                                      int _numThreads)
-    : ip(_ip), port(_port), numThreads(_numThreads), tasks(_numThreads) {
+    : Server(_ip, _port), numThreads(_numThreads), tasks(_numThreads) {
 }
 void PreThreadedServer::run() {
     if (numThreads <= 0) {
@@ -16,22 +16,22 @@ void PreThreadedServer::run() {
     for (int i = 0; i < numThreads; i++) {
         threads.push_back(thread(&PreThreadedServer::workerMain, this));
     }
-    listenSocket = make_shared<Socket>(Socket::domainINET, false, false);
-    listenSocket->bind(ip, port);
-    listenSocket->listen(10);
+    listener = make_shared<Listener>(ip, port, 10);
     while (true) {
-        shared_ptr<Socket> conn = listenSocket->accept();
+        shared_ptr<Connection> conn = listener->accept();
         tasks.push(conn);
     }
 }
 void PreThreadedServer::workerMain() {
     while (true) {
-        shared_ptr<Socket> conn = tasks.pop();
-        vector<char> buf(4096);
-        ssize_t size = conn->recv(buf, buf.size());
+        shared_ptr<Connection> conn = tasks.pop();
+        string buf(4096, 0);
+        size_t size = conn->recv(buf);
         while (size > 0) {
-            onMessage(buf, size, bind(&Socket::send, conn, _1, _2));
-            size = conn->recv(buf, size);
+            string message(buf.begin(), buf.begin() + size);
+            onMessage(message,
+                      [&](string &s) -> size_t { return conn->send(s); });
+            size = conn->recv(buf);
         }
         conn->close();
     }

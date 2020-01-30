@@ -18,14 +18,11 @@ public:
     void run();
 
 private:
-    string ip;
-    uint16_t port;
     int numProcess;
-    shared_ptr<Socket> listenSocket;
     vector<ChildProcess> childs;
     void childMain(int fd);
     int recvFd(int fd);
     size_t getAvailableProcess();
-    void sendConn(int fd, shared_ptr<Socket> conn);
-    shared_ptr<Socket> recvConn(int fd);
+    void sendConn(int fd, shared_ptr<Connection> conn);
+    shared_ptr<Connection> recvConn(int fd);
 };

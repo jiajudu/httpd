@@ -14,10 +14,7 @@ public:
     void run();
 
 private:
-    string ip;
-    uint16_t port;
     int numThreads;
-    shared_ptr<Socket> listenSocket;
-    BlockingQueue<shared_ptr<Socket>> tasks;
+    BlockingQueue<shared_ptr<Connection>> tasks;
     void workerMain();
 };

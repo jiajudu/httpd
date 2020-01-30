@@ -7,7 +7,7 @@
 ChildProcess::ChildProcess(int _fd) : fd(_fd), busy(false) {
 }
 PreForkServer::PreForkServer(string &_ip, uint16_t _port, int _numProcess)
-    : ip(_ip), port(_port), numProcess(_numProcess) {
+    : Server(_ip, _port), numProcess(_numProcess) {
 }
 void PreForkServer::run() {
     if (numProcess <= 0) {
@@ -15,13 +15,13 @@ void PreForkServer::run() {
     }
     for (int i = 0; i < numProcess; i++) {
         int fds[2];
-        int ret = socketpair(Socket::domainLocal, SOCK_STREAM, 0, fds);
+        int ret = socketpair(Socket::domain_local, SOCK_STREAM, 0, fds);
         if (ret < 0) {
-            fatalError();
+            syscall_error();
         }
         int pid = fork();
         if (pid < 0) {
-            fatalError();
+            syscall_error();
         }
         if (pid > 0) {
             close(fds[1]);
@@ -34,11 +34,9 @@ void PreForkServer::run() {
             childMain(fds[1]);
         }
     }
-    listenSocket = make_shared<Socket>(Socket::domainINET, false, false);
-    listenSocket->bind(ip, port);
-    listenSocket->listen(10);
+    listener = make_shared<Listener>(ip, port, 10);
     while (true) {
-        shared_ptr<Socket> conn = listenSocket->accept();
+        shared_ptr<Connection> conn = listener->accept();
         size_t childIndex = getAvailableProcess();
         sendConn(childs[childIndex].fd, conn);
         childs[childIndex].busy = true;
@@ -61,7 +59,7 @@ size_t PreForkServer::getAvailableProcess() {
     }
     int ret = select(nfds + 1, &readfds, 0, 0, 0);
     if (ret < 0) {
-        fatalError();
+        syscall_error();
     }
     for (size_t i = 0; i < childs.size(); i++) {
         if (FD_ISSET(childs[i].fd, &readfds)) {
@@ -79,30 +77,34 @@ size_t PreForkServer::getAvailableProcess() {
 }
 void PreForkServer::childMain(int fd) {
     while (true) {
-        shared_ptr<Socket> conn = recvConn(fd);
-        vector<char> buf(4096);
-        ssize_t size = conn->recv(buf, buf.size());
+        shared_ptr<Connection> conn = recvConn(fd);
+        conn->close();
+        string buf(4096, 0);
+        size_t size = conn->recv(buf);
         while (size > 0) {
-            onMessage(buf, size, bind(&Socket::send, conn, _1, _2));
-            size = conn->recv(buf, buf.size());
+            string message(buf.begin(), buf.begin() + size);
+            onMessage(message,
+                      [&](string &s) -> size_t { return conn->send(s); });
+            size = conn->recv(buf);
         }
         conn->close();
         write(fd, &buf[0], 1);
     }
 }
-void PreForkServer::sendConn(int fd, shared_ptr<Socket> conn) {
+void PreForkServer::sendConn(int fd, shared_ptr<Connection> conn) {
+    if (!conn->can_be_sent()) {
+        agreement_error("this connection cannot be sent");
+    }
     struct iovec iov[1];
     struct msghdr msg;
-    char buf[24];
-    int connfd = conn->getFd();
-    int domain = conn->getDomain();
-    bool nonBlock = conn->getNonBlock();
-    bool closeExec = conn->getCloseExec();
+    char buf[16];
+    int connfd = conn->get_socket()->get_fd();
+    int domain = conn->get_socket()->get_domain();
+    bool non_blocking = conn->get_is_non_blocking();
     memcpy(buf, &domain, sizeof(int));
-    memcpy(buf + 8, &nonBlock, sizeof(bool));
-    memcpy(buf + 16, &closeExec, sizeof(bool));
+    memcpy(buf + 8, &non_blocking, sizeof(bool));
     iov[0].iov_base = buf;
-    iov[0].iov_len = 24;
+    iov[0].iov_len = 16;
     msg.msg_name = 0;
     msg.msg_namelen = 0;
     msg.msg_iov = iov;
@@ -116,15 +118,15 @@ void PreForkServer::sendConn(int fd, shared_ptr<Socket> conn) {
     msg.msg_controllen = CMSG_LEN(sizeof(int));
     ssize_t ret = sendmsg(fd, &msg, 0);
     if (ret < 0) {
-        fatalError();
+        syscall_error();
     }
 }
-shared_ptr<Socket> PreForkServer::recvConn(int fd) {
+shared_ptr<Connection> PreForkServer::recvConn(int fd) {
     struct iovec iov[1];
     struct msghdr msg;
     char buf[24];
     iov[0].iov_base = buf;
-    iov[0].iov_len = 24;
+    iov[0].iov_len = 16;
     msg.msg_name = 0;
     msg.msg_namelen = 0;
     msg.msg_iov = iov;
@@ -135,7 +137,7 @@ shared_ptr<Socket> PreForkServer::recvConn(int fd) {
     recvmsg(fd, &msg, 0);
     int connfd = *(int *)CMSG_DATA(&cm);
     int domain = *(reinterpret_cast<int *>(buf));
-    int nonBlock = *(reinterpret_cast<bool *>(buf + 8));
-    int closeExec = *(reinterpret_cast<bool *>(buf + 16));
-    return make_shared<Socket>(connfd, domain, nonBlock, closeExec);
+    bool non_blocking = *(reinterpret_cast<bool *>(buf + 8));
+    return make_shared<Connection>(
+        make_shared<Socket>(connfd, domain, non_blocking), non_blocking);
 }

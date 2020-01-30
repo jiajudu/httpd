@@ -1,34 +1,31 @@
 #include "auxiliary/buffer.h"
-Buffer::Buffer() : buf(1024), writePtr(0), readPtr(0) {
+Buffer::Buffer() : buf(1024), write_ptr(0), read_ptr(0) {
+}
+void Buffer::prepare_space(size_t n) {
+    if (n + write_ptr > buf.size()) {
+        if (n + write_ptr - read_ptr <= buf.size()) {
+            copy(&buf[read_ptr], &buf[write_ptr], &buf[0]);
+        } else {
+            vector<char> t(max(n + write_ptr - read_ptr, buf.size() * 2));
+            copy(&buf[read_ptr], &buf[write_ptr], &t[0]);
+            swap(t, buf);
+        }
+        write_ptr = write_ptr - read_ptr;
+        read_ptr = 0;
+    }
+}
+size_t Buffer::write(const char *s, size_t n) {
+    prepare_space(n);
+    copy(s, s + n, &buf[write_ptr]);
+    write_ptr += n;
+    return n;
+}
+size_t
+Buffer::read(function<size_t(char *s_buf, size_t n_buf)> decode_and_copy) {
+    size_t n = decode_and_copy(&buf[read_ptr], min(n, size()));
+    read_ptr += n;
+    return n;
 }
 size_t Buffer::size() const {
-    return writePtr - readPtr;
-}
-void Buffer::write(vector<char> &s) {
-    if (s.size() + writePtr <= buf.size()) {
-        copy(s.begin(), s.end(), &s[writePtr]);
-        writePtr += s.size();
-    } else if (s.size() + writePtr - readPtr <= buf.size()) {
-        copy(&buf[readPtr], &buf[writePtr], &buf[0]);
-        writePtr = writePtr - readPtr;
-        readPtr = 0;
-        copy(s.begin(), s.end(), &s[writePtr]);
-        writePtr += s.size();
-    } else {
-        vector<char> t(max(s.size() + writePtr - readPtr, buf.size() * 2));
-        copy(&buf[readPtr], &buf[writePtr], &t[0]);
-        copy(s.begin(), s.end(), &t[writePtr - readPtr]);
-        writePtr = writePtr - readPtr + s.size();
-        readPtr = 0;
-        swap(t, buf);
-    }
-}
-vector<char> Buffer::read(size_t n) {
-    if (n == 0 || writePtr - readPtr < n) {
-        n = writePtr - readPtr;
-    }
-    vector<char> ret(n);
-    copy(&buf[readPtr], &buf[readPtr + n], ret.begin());
-    readPtr += n;
-    return ret;
+    return write_ptr - read_ptr;
 }
