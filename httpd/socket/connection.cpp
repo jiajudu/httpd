@@ -74,7 +74,8 @@ bool Connection::get_is_non_blocking() const {
     return is_non_blocking;
 }
 bool Connection::can_be_sent() const {
-    return !buf_recv && !buf_send && !to_close && !closed;
+    return (!buf_recv || buf_recv->size() == 0) &&
+           (!buf_send || buf_send->size() == 0) && !to_close && !closed;
 }
 int Connection::get_fd() const {
     return socket->get_fd();

@@ -30,5 +30,5 @@ private:
         int eventfd;
     };
     int numThreads;
-    void worker_main(ThreadData &thread_data);
+    void worker_main(ThreadData &data);
 };

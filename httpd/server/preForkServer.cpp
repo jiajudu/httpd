@@ -31,15 +31,15 @@ void PreForkServer::run() {
                 close(childs[j].fd);
             }
             close(fds[0]);
-            childMain(fds[1]);
+            child_main(fds[1]);
         }
     }
     listener = make_shared<Listener>(ip, port, 10);
     while (true) {
         shared_ptr<Connection> conn = listener->accept();
-        size_t childIndex = getAvailableProcess();
-        sendConn(childs[childIndex].fd, conn);
-        childs[childIndex].busy = true;
+        size_t child_index = getAvailableProcess();
+        send_conn(childs[child_index].fd, conn);
+        childs[child_index].busy = true;
         conn->close();
     }
 }
@@ -75,9 +75,9 @@ size_t PreForkServer::getAvailableProcess() {
     }
     exit(1);
 }
-void PreForkServer::childMain(int fd) {
+void PreForkServer::child_main(int fd) {
     while (true) {
-        shared_ptr<Connection> conn = recvConn(fd);
+        shared_ptr<Connection> conn = recv_conn(fd);
         conn->close();
         string buf(4096, 0);
         size_t size = conn->recv(buf);
@@ -91,7 +91,7 @@ void PreForkServer::childMain(int fd) {
         write(fd, &buf[0], 1);
     }
 }
-void PreForkServer::sendConn(int fd, shared_ptr<Connection> conn) {
+void PreForkServer::send_conn(int fd, shared_ptr<Connection> conn) {
     if (!conn->can_be_sent()) {
         agreement_error("this connection cannot be sent");
     }
@@ -121,7 +121,7 @@ void PreForkServer::sendConn(int fd, shared_ptr<Connection> conn) {
         syscall_error();
     }
 }
-shared_ptr<Connection> PreForkServer::recvConn(int fd) {
+shared_ptr<Connection> PreForkServer::recv_conn(int fd) {
     struct iovec iov[1];
     struct msghdr msg;
     char buf[24];

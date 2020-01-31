@@ -1,2 +1,2 @@
 build/
-httpd/strace_output
+httpd/strace_output*
