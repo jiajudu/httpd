@@ -1,59 +1,48 @@
 #include "server/reactorServer.h"
 #include "auxiliary/error.h"
+#include "multiplexing/multiplexer.h"
+#include "multiplexing/poller.h"
 #include <poll.h>
 #include <unordered_set>
 ReactorServer::ReactorServer(string &_ip, uint16_t _port) : Server(_ip, _port) {
 }
 void ReactorServer::run() {
     listener = make_shared<Listener>(ip, port, 10, true);
-    unordered_map<int, shared_ptr<Connection>> sockets;
+    shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
+    multiplexer->add_event_fd(listener->get_fd());
+    multiplexer->eventfd_read_callback = [&](int _fd) -> void {
+        if (listener->get_fd() == _fd) {
+            shared_ptr<Connection> conn = listener->accept();
+            multiplexer->add_connection_fd(conn, true, false);
+        }
+    };
+    multiplexer->socket_read_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        conn->non_blocking_recv();
+        string message;
+        conn->recv(message, decoder);
+        if (message.size() > 0) {
+            onMessage(message,
+                      [&](string &s) -> size_t { return conn->send(s); });
+        }
+        multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
+    };
+    multiplexer->socket_write_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        conn->non_blocking_send();
+        multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
+    };
+    multiplexer->socket_error_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->del_connection_fd(conn);
+        conn->close();
+    };
+    multiplexer->socket_hang_up_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->del_connection_fd(conn);
+        conn->close();
+    };
     while (true) {
-        vector<struct pollfd> pollfds;
-        pollfds.push_back({listener->get_fd(), POLLIN, 0});
-        for (auto it = sockets.begin(); it != sockets.end(); it++) {
-            short int events = POLLIN | POLLPRI | POLLRDHUP;
-            if (it->second->has_content_to_send()) {
-                events |= POLLOUT;
-            }
-            pollfds.push_back({it->first, events, 0});
-        }
-        int ret = poll(&pollfds[0], pollfds.size(), -1);
-        if (ret < 0) {
-            syscall_error();
-        }
-        for (auto &pollfd : pollfds) {
-            if (pollfd.fd == listener->get_fd()) {
-                if (pollfd.revents & POLLIN) {
-                    shared_ptr<Connection> conn = listener->accept();
-                    sockets[conn->get_fd()] = conn;
-                }
-            } else {
-                shared_ptr<Connection> conn = sockets[pollfd.fd];
-                if (pollfd.revents & POLLNVAL) {
-                    agreement_error("poll invalid fd");
-                } else if (pollfd.revents & POLLERR) {
-                    sockets.erase(pollfd.fd);
-                    conn->close();
-                } else {
-                    if (pollfd.revents & POLLIN) {
-                        conn->non_blocking_recv();
-                        string message;
-                        conn->recv(message, decoder);
-                        if (message.size() > 0) {
-                            onMessage(message, [&](string &s) -> size_t {
-                                return conn->send(s);
-                            });
-                        }
-                    }
-                    if (pollfd.revents & POLLOUT) {
-                        conn->non_blocking_send();
-                    }
-                    if (pollfd.revents & POLLRDHUP) {
-                        sockets.erase(pollfd.fd);
-                        conn->close();
-                    }
-                }
-            }
-        }
+        multiplexer->read();
     }
 }

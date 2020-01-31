@@ -1,44 +1,13 @@
 #include "server/threadPoolReactorServer.h"
+#include "auxiliary/blockingQueue.h"
 #include "auxiliary/error.h"
+#include "multiplexing/multiplexer.h"
+#include "multiplexing/poller.h"
 #include "unistd.h"
 #include <poll.h>
 #include <sys/eventfd.h>
 #include <thread>
 #include <unordered_set>
-ThreadPoolReactorServer::ThreadData::ThreadData() {
-    eventfd = ::eventfd(0, EFD_NONBLOCK);
-}
-void ThreadPoolReactorServer::ThreadData::add_connection(
-    shared_ptr<Connection> conn) {
-    unique_lock<mutex> g(lock);
-    sockets[conn->get_fd()] = conn;
-    cond.notify_all();
-}
-void ThreadPoolReactorServer::ThreadData::assume_has_connection() {
-    unique_lock<mutex> g(lock);
-    while (sockets.size() == 0) {
-        cond.wait(g);
-    }
-}
-void ThreadPoolReactorServer::ThreadData::it(
-    function<void(int fd, shared_ptr<Connection> socket)> op) {
-    unique_lock<mutex> g(lock);
-    for (auto it = sockets.begin(); it != sockets.end(); it++) {
-        op(it->first, it->second);
-    }
-}
-shared_ptr<Connection>
-ThreadPoolReactorServer::ThreadData::get_connection(int fd) {
-    unique_lock<mutex> g(lock);
-    return sockets[fd];
-}
-void ThreadPoolReactorServer::ThreadData::delete_connection(int fd) {
-    unique_lock<mutex> g(lock);
-    sockets.erase(fd);
-}
-int ThreadPoolReactorServer::ThreadData::get_eventfd() const {
-    return eventfd;
-}
 ThreadPoolReactorServer::ThreadPoolReactorServer(string &_ip, uint16_t _port,
                                                  int _numThreads)
     : Server(_ip, _port), numThreads(_numThreads) {
@@ -48,67 +17,64 @@ void ThreadPoolReactorServer::run() {
         exit(1);
     }
     vector<thread> threads;
-    vector<ThreadData> data(numThreads);
+    vector<Queue<shared_ptr<Connection>>> queues(numThreads);
+    vector<int> event_fds;
     for (int i = 0; i < numThreads; i++) {
-        threads.push_back(
-            thread(&ThreadPoolReactorServer::worker_main, this, ref(data[i])));
+        event_fds.push_back(eventfd(0, EFD_NONBLOCK));
+        threads.push_back(thread(&ThreadPoolReactorServer::worker_main, this,
+                                 ref(queues[i]), event_fds[i]));
     }
     listener = make_shared<Listener>(ip, port, 10, true);
     for (size_t i = 0;; i++) {
         shared_ptr<Connection> conn = listener->accept();
-        data[i % numThreads].add_connection(conn);
-        eventfd_write(data[i % numThreads].get_eventfd(), 1);
+        queues[i % numThreads].push(conn);
+        eventfd_write(event_fds[i % numThreads], 1);
     }
 }
-void ThreadPoolReactorServer::worker_main(ThreadData &data) {
+void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
+                                          int event_fd) {
+    shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
+    multiplexer->add_event_fd(event_fd);
+    multiplexer->eventfd_read_callback = [&](int _fd) -> void {
+        if (_fd == event_fd) {
+            eventfd_t e;
+            eventfd_read(event_fd, &e);
+            queue<shared_ptr<Connection>> conns;
+            conn_q.pop_all(conns);
+            while (conns.size() > 0) {
+                shared_ptr<Connection> conn = conns.front();
+                conns.pop();
+                multiplexer->add_connection_fd(conn, true, false);
+            }
+        }
+    };
+    multiplexer->socket_read_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        conn->non_blocking_recv();
+        string message;
+        conn->recv(message, decoder);
+        if (message.size() > 0) {
+            onMessage(message,
+                      [&](string &s) -> size_t { return conn->send(s); });
+        }
+        multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
+    };
+    multiplexer->socket_write_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        conn->non_blocking_send();
+        multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
+    };
+    multiplexer->socket_error_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->del_connection_fd(conn);
+        conn->close();
+    };
+    multiplexer->socket_hang_up_callback =
+        [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->del_connection_fd(conn);
+        conn->close();
+    };
     while (true) {
-        data.assume_has_connection();
-        vector<struct pollfd> pollfds;
-        pollfds.push_back({data.get_eventfd(), POLLIN, 0});
-        data.it([&](int fd, shared_ptr<Connection> socket) -> void {
-            short int events = POLLIN | POLLPRI | POLLRDHUP;
-            if (socket->has_content_to_send()) {
-                events |= POLLOUT;
-            }
-            pollfds.push_back({fd, events, 0});
-        });
-        int ret = poll(&pollfds[0], pollfds.size(), -1);
-        if (ret < 0) {
-            syscall_error();
-        }
-        for (auto &pollfd : pollfds) {
-            if (pollfd.fd == data.get_eventfd()) {
-                if (pollfd.revents & POLLIN) {
-                    eventfd_t count;
-                    eventfd_read(data.get_eventfd(), &count);
-                }
-            } else {
-                shared_ptr<Connection> conn = data.get_connection(pollfd.fd);
-                if (pollfd.revents & POLLNVAL) {
-                    agreement_error("poll invalid fd");
-                } else if (pollfd.revents & POLLERR) {
-                    data.delete_connection(pollfd.fd);
-                    conn->close();
-                } else {
-                    if (pollfd.revents & POLLIN) {
-                        conn->non_blocking_recv();
-                        string message;
-                        conn->recv(message, decoder);
-                        if (message.size() > 0) {
-                            onMessage(message, [&](string &s) -> size_t {
-                                return conn->send(s);
-                            });
-                        }
-                    }
-                    if (pollfd.revents & POLLOUT) {
-                        conn->non_blocking_send();
-                    }
-                    if (pollfd.revents & POLLRDHUP) {
-                        data.delete_connection(pollfd.fd);
-                        conn->close();
-                    }
-                }
-            }
-        }
+        multiplexer->read();
     }
 }

@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     uint16_t port = static_cast<uint16_t>(stoi(string(argv[1])));
     string ip("127.0.0.1");
     shared_ptr<Server> server =
-        make_shared<ProcessPoolReactorServer>(ip, port, 2);
+        make_shared<ThreadPoolReactorServer>(ip, port, 2);
     Echo echo(server);
     server->run();
     return 0;
