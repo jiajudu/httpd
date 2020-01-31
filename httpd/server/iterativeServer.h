@@ -7,6 +7,6 @@
 #include <string>
 class IterativeServer : public Server {
 public:
-    IterativeServer(string &ip, uint16_t port);
+    IterativeServer(shared_ptr<Service> _service, string &ip, uint16_t port);
     void run();
 };

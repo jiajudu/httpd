@@ -8,9 +8,10 @@
 #include <sys/eventfd.h>
 #include <thread>
 #include <unordered_set>
-ThreadPoolReactorServer::ThreadPoolReactorServer(string &_ip, uint16_t _port,
+ThreadPoolReactorServer::ThreadPoolReactorServer(shared_ptr<Service> _service,
+                                                 string &_ip, uint16_t _port,
                                                  int _numThreads)
-    : Server(_ip, _port), numThreads(_numThreads) {
+    : Server(_service, _ip, _port), numThreads(_numThreads) {
 }
 void ThreadPoolReactorServer::run() {
     if (numThreads <= 0) {
@@ -52,10 +53,9 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
         [&](shared_ptr<Connection> conn) -> void {
         conn->non_blocking_recv();
         string message;
-        conn->recv(message, decoder);
+        conn->recv(message, service->decoder);
         if (message.size() > 0) {
-            onMessage(message,
-                      [&](string &s) -> size_t { return conn->send(s); });
+            service->onMessage(conn, message);
         }
         multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
     };

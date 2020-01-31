@@ -10,7 +10,8 @@
 #include <vector>
 class PreThreadedServer : public Server {
 public:
-    PreThreadedServer(string &ip, uint16_t port, int numThreaded);
+    PreThreadedServer(shared_ptr<Service> _service, string &ip, uint16_t port,
+                      int numThreaded);
     void run();
 
 private:

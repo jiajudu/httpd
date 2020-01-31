@@ -9,7 +9,8 @@
 #include <vector>
 class ProcessPoolReactorServer : public Server {
 public:
-    ProcessPoolReactorServer(string &ip, uint16_t port, int numProcess);
+    ProcessPoolReactorServer(shared_ptr<Service> _service, string &ip,
+                             uint16_t port, int numProcess);
     void run();
 
 private:

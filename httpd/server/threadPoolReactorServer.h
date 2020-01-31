@@ -9,7 +9,8 @@
 #include <thread>
 class ThreadPoolReactorServer : public Server {
 public:
-    ThreadPoolReactorServer(string &ip, uint16_t port, int numThreads);
+    ThreadPoolReactorServer(shared_ptr<Service> _service, string &ip,
+                            uint16_t port, int numThreads);
     void run();
 
 private:

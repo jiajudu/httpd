@@ -4,8 +4,8 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-PreForkServer::PreForkServer(string &_ip, uint16_t _port, int _numProcess)
-    : Server(_ip, _port), numProcess(_numProcess) {
+PreForkServer::PreForkServer(shared_ptr<Service> _service, string &_ip, uint16_t _port, int _numProcess)
+    : Server(_service, _ip, _port), numProcess(_numProcess) {
 }
 void PreForkServer::run() {
     if (numProcess <= 0) {
@@ -76,8 +76,7 @@ void PreForkServer::child_main(FDTransmission &fdt) {
         size_t size = conn->recv(buf);
         while (size > 0) {
             string message(buf.begin(), buf.begin() + size);
-            onMessage(message,
-                      [&](string &s) -> size_t { return conn->send(s); });
+            service->onMessage(conn, message);
             size = conn->recv(buf);
         }
         conn->close();

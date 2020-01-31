@@ -7,6 +7,6 @@
 #include <string>
 class ForkServer : public Server {
 public:
-    ForkServer(string &ip, uint16_t port);
+    ForkServer(shared_ptr<Service> _service, string &ip, uint16_t port);
     void run();
 };

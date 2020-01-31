@@ -7,6 +7,6 @@
 #include <string>
 class ReactorServer : public Server {
 public:
-    ReactorServer(string &ip, uint16_t port);
+    ReactorServer(shared_ptr<Service> _service, string &ip, uint16_t port);
     void run();
 };

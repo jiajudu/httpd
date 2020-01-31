@@ -9,7 +9,8 @@
 #include <vector>
 class PreForkServer : public Server {
 public:
-    PreForkServer(string &ip, uint16_t port, int numProcess);
+    PreForkServer(shared_ptr<Service> _service, string &ip, uint16_t port,
+                  int numProcess);
     void run();
 
 private:

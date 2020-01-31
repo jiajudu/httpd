@@ -4,9 +4,9 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-PreThreadedServer::PreThreadedServer(string &_ip, uint16_t _port,
-                                     int _numThreads)
-    : Server(_ip, _port), numThreads(_numThreads), tasks(_numThreads) {
+PreThreadedServer::PreThreadedServer(shared_ptr<Service> _service, string &_ip,
+                                     uint16_t _port, int _numThreads)
+    : Server(_service, _ip, _port), numThreads(_numThreads), tasks(_numThreads) {
 }
 void PreThreadedServer::run() {
     if (numThreads <= 0) {
@@ -29,8 +29,7 @@ void PreThreadedServer::worker_main() {
         size_t size = conn->recv(buf);
         while (size > 0) {
             string message(buf.begin(), buf.begin() + size);
-            onMessage(message,
-                      [&](string &s) -> size_t { return conn->send(s); });
+            service->onMessage(conn, message);
             size = conn->recv(buf);
         }
         conn->close();

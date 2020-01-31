@@ -7,7 +7,7 @@
 #include <string>
 class ThreadedServer : public Server {
 public:
-    ThreadedServer(string &ip, uint16_t port);
+    ThreadedServer(shared_ptr<Service> _service, string &ip, uint16_t port);
     void run();
 
 private:

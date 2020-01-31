@@ -4,7 +4,9 @@
 #include "multiplexing/poller.h"
 #include <poll.h>
 #include <unordered_set>
-ReactorServer::ReactorServer(string &_ip, uint16_t _port) : Server(_ip, _port) {
+ReactorServer::ReactorServer(shared_ptr<Service> _service, string &_ip,
+                             uint16_t _port)
+    : Server(_service, _ip, _port) {
 }
 void ReactorServer::run() {
     listener = make_shared<Listener>(ip, port, 10, true);
@@ -20,10 +22,9 @@ void ReactorServer::run() {
         [&](shared_ptr<Connection> conn) -> void {
         conn->non_blocking_recv();
         string message;
-        conn->recv(message, decoder);
+        conn->recv(message, service->decoder);
         if (message.size() > 0) {
-            onMessage(message,
-                      [&](string &s) -> size_t { return conn->send(s); });
+            service->onMessage(conn, message);
         }
         multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
     };
