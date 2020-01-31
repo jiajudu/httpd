@@ -8,19 +8,14 @@ void ReactorServer::run() {
     listener = make_shared<Listener>(ip, port, 10, true);
     unordered_map<int, shared_ptr<Connection>> sockets;
     while (true) {
-        vector<struct pollfd> pollfds(sockets.size() + 1);
-        pollfds[0].fd = listener->get_fd();
-        pollfds[0].events = POLLIN;
-        pollfds[0].revents = 0;
-        int i = 1;
+        vector<struct pollfd> pollfds;
+        pollfds.push_back({listener->get_fd(), POLLIN, 0});
         for (auto it = sockets.begin(); it != sockets.end(); it++) {
-            pollfds[i].fd = it->first;
-            pollfds[i].events = POLLIN | POLLPRI | POLLRDHUP;
+            short int events = POLLIN | POLLPRI | POLLRDHUP;
             if (it->second->has_content_to_send()) {
-                pollfds[i].events |= POLLOUT;
+                events |= POLLOUT;
             }
-            pollfds[i].revents = 0;
-            i++;
+            pollfds.push_back({it->first, events, 0});
         }
         int ret = poll(&pollfds[0], pollfds.size(), -1);
         if (ret < 0) {

@@ -14,7 +14,7 @@ void PreThreadedServer::run() {
     }
     vector<thread> threads;
     for (int i = 0; i < numThreads; i++) {
-        threads.push_back(thread(&PreThreadedServer::workerMain, this));
+        threads.push_back(thread(&PreThreadedServer::worker_main, this));
     }
     listener = make_shared<Listener>(ip, port, 10);
     while (true) {
@@ -22,7 +22,7 @@ void PreThreadedServer::run() {
         tasks.push(conn);
     }
 }
-void PreThreadedServer::workerMain() {
+void PreThreadedServer::worker_main() {
     while (true) {
         shared_ptr<Connection> conn = tasks.pop();
         string buf(4096, 0);

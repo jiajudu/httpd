@@ -16,5 +16,5 @@ public:
 private:
     int numThreads;
     BlockingQueue<shared_ptr<Connection>> tasks;
-    void workerMain();
+    void worker_main();
 };

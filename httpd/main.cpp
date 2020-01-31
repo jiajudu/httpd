@@ -3,6 +3,7 @@
 #include "server/preForkServer.h"
 #include "server/preThreadedServer.h"
 #include "server/reactorServer.h"
+#include "server/threadPoolReactorServer.h"
 #include "server/threadedServer.h"
 #include "service/echo.h"
 #include <iostream>
@@ -14,7 +15,8 @@ int main(int argc, char **argv) {
     }
     uint16_t port = static_cast<uint16_t>(stoi(string(argv[1])));
     string ip("127.0.0.1");
-    shared_ptr<Server> server = make_shared<ReactorServer>(ip, port);
+    shared_ptr<Server> server =
+        make_shared<ThreadPoolReactorServer>(ip, port, 2);
     Echo echo(server);
     server->run();
     return 0;
