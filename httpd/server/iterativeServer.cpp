@@ -7,13 +7,17 @@ void IterativeServer::run() {
     listener = make_shared<Listener>(ip, port, 10);
     while (true) {
         shared_ptr<Connection> conn = listener->accept();
+        service->onConnection(conn);
         string buf(4096, 0);
-        size_t size = conn->recv(buf);
-        while (size > 0) {
-            string message(buf.begin(), buf.begin() + size);
-            service->onMessage(conn, message);
-            size = conn->recv(buf);
+        size_t size = 4096;
+        while (conn->active()) {
+            if (size > 0) {
+                size = conn->recv(buf);
+                string message(buf.begin(), buf.begin() + size);
+                service->onMessage(conn, message);
+            } else {
+                conn->close();
+            }
         }
-        conn->close();
     }
 }

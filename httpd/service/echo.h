@@ -9,6 +9,7 @@ class Echo : public Service {
 public:
     Echo();
     void onMessage(shared_ptr<Connection> conn, string &input_message);
+    void onConnection(shared_ptr<Connection> conn);
 
 private:
     size_t decode(char *buf, size_t n);

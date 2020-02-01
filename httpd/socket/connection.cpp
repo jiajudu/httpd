@@ -10,7 +10,11 @@ Connection::Connection(shared_ptr<Socket> _socket, bool _is_non_blocking)
 }
 size_t Connection::send(const string &s) {
     if (is_non_blocking) {
+        bool has_content = buf_send->size() > 0;
         buf_send->write(s.c_str(), s.size());
+        if (onSendBegin && !has_content && buf_send->size() > 0) {
+            onSendBegin(shared_from_this());
+        }
         return s.size();
     } else {
         return socket->send(s.c_str(), s.size(), 0);
@@ -34,11 +38,18 @@ size_t Connection::recv(string &s,
 }
 void Connection::non_blocking_send() {
     if (is_non_blocking) {
+        bool has_content = buf_send->size() > 0;
         buf_send->read([this](char *s, size_t n) -> size_t {
             return socket->send(s, n, Socket::message_dont_wait);
         });
+        if (onSendEnd && has_content && buf_send->size() == 0) {
+            onSendEnd(shared_from_this());
+        }
         if (buf_send->size() == 0 && to_close) {
             closed = true;
+            if (onClose) {
+                onClose(shared_from_this());
+            }
             socket->close();
         }
     }
@@ -54,18 +65,20 @@ void Connection::non_blocking_recv() {
     }
 }
 int Connection::close() {
-    if (is_non_blocking) {
-        if (buf_send->size() == 0) {
-            closed = true;
-            return socket->close();
-        } else {
-            to_close = true;
-            return 1;
-        }
+    if (has_content_to_send()) {
+        to_close = true;
+        return 1;
     } else {
         closed = true;
+        if (onClose) {
+            onClose(shared_from_this());
+        }
         return socket->close();
     }
+}
+int Connection::shutdown() {
+    closed = true;
+    return socket->close();
 }
 shared_ptr<Socket> Connection::get_socket() const {
     return socket;
@@ -82,4 +95,7 @@ int Connection::get_fd() const {
 }
 bool Connection::has_content_to_send() const {
     return is_non_blocking && buf_send->size() > 0;
+}
+bool Connection::active() const {
+    return !to_close && !closed;
 }

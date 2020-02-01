@@ -3,6 +3,9 @@
 Discard::Discard() {
     decoder = bind(&Discard::decode, this, _1, _2);
 }
+void Discard::onConnection(shared_ptr<Connection> conn) {
+    (void)conn;
+}
 void Discard::onMessage(shared_ptr<Connection> conn, string &input_message) {
     (void)conn;
     (void)input_message;

@@ -35,6 +35,15 @@ void ThreadPoolReactorServer::run() {
 void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                                           int event_fd) {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
+    auto connection_close = [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->del_connection_fd(conn);
+    };
+    auto connection_send_begin = [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->mod_connection_fd(conn, true, true);
+    };
+    auto connection_send_end = [&](shared_ptr<Connection> conn) -> void {
+        multiplexer->mod_connection_fd(conn, true, false);
+    };
     multiplexer->add_event_fd(event_fd);
     multiplexer->eventfd_read_callback = [&](int _fd) -> void {
         if (_fd == event_fd) {
@@ -46,6 +55,10 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                 shared_ptr<Connection> conn = conns.front();
                 conns.pop();
                 multiplexer->add_connection_fd(conn, true, false);
+                conn->onClose = connection_close;
+                conn->onSendBegin = connection_send_begin;
+                conn->onSendEnd = connection_send_end;
+                service->onConnection(conn);
             }
         }
     };
@@ -57,23 +70,16 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
         if (message.size() > 0) {
             service->onMessage(conn, message);
         }
-        multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
     };
     multiplexer->socket_write_callback =
-        [&](shared_ptr<Connection> conn) -> void {
-        conn->non_blocking_send();
-        multiplexer->mod_connection_fd(conn, true, conn->has_content_to_send());
-    };
+        [&](shared_ptr<Connection> conn) -> void { conn->non_blocking_send(); };
     multiplexer->socket_error_callback =
         [&](shared_ptr<Connection> conn) -> void {
         multiplexer->del_connection_fd(conn);
-        conn->close();
+        conn->shutdown();
     };
     multiplexer->socket_hang_up_callback =
-        [&](shared_ptr<Connection> conn) -> void {
-        multiplexer->del_connection_fd(conn);
-        conn->close();
-    };
+        [&](shared_ptr<Connection> conn) -> void { conn->close(); };
     while (true) {
         multiplexer->read();
     }
