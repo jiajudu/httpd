@@ -9,6 +9,7 @@
 #include "service/daytime.h"
 #include "service/discard.h"
 #include "service/echo.h"
+#include "service/timestamp.h"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -19,6 +20,8 @@ shared_ptr<Service> get_service(string &service_name) {
         return make_shared<Discard>();
     } else if (service_name == "daytime") {
         return make_shared<DayTime>();
+    } else if (service_name == "timestamp") {
+        return make_shared<Timestamp>();
     } else {
         exit(1);
     }
