@@ -10,6 +10,7 @@
 #include "service/daytime.h"
 #include "service/discard.h"
 #include "service/echo.h"
+#include "service/sendfile.h"
 #include "service/timestamp.h"
 #include <iostream>
 #include <memory>
@@ -25,6 +26,8 @@ shared_ptr<Service> get_service(string &service_name) {
         return make_shared<Timestamp>();
     } else if (service_name == "chargen") {
         return make_shared<Chargen>();
+    } else if (service_name == "sendfile") {
+        return make_shared<Sendfile>();
     } else {
         exit(1);
     }

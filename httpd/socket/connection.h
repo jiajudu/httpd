@@ -2,6 +2,7 @@
 #include "auxiliary/buffer.h"
 #include "auxiliary/std.h"
 #include "socket/socket.h"
+#include <any>
 #include <memory>
 #include <vector>
 class Connection : public enable_shared_from_this<Connection> {
@@ -24,6 +25,7 @@ public:
     function<void(shared_ptr<Connection>)> onClose = 0;
     function<void(shared_ptr<Connection>)> onSendBegin = 0;
     function<void(shared_ptr<Connection>)> onSendComplete = 0;
+    any data;
 
 private:
     shared_ptr<Socket> socket;
