@@ -62,19 +62,19 @@ int Socket::accept() {
         agreement_error("protocal not implemented.");
     }
 }
-size_t Socket::recv(char *buf, size_t size, int flag) {
+ssize_t Socket::recv(char *buf, size_t size, int flag) {
     ssize_t ret = ::recv(fd, buf, size, flag);
     if (ret < 0) {
         syscall_error();
     }
-    return static_cast<size_t>(ret);
+    return ret;
 }
-size_t Socket::send(const char *buf, size_t size, int flag) {
+ssize_t Socket::send(const char *buf, size_t size, int flag) {
     ssize_t ret = ::send(fd, buf, size, flag);
-    if (ret < 0) {
+    if (ret < 0 && (errno != EPIPE && errno != ECONNRESET)) {
         syscall_error();
     }
-    return static_cast<size_t>(ret);
+    return ret;
 }
 int Socket::close() {
     int ret = ::close(fd);

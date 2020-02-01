@@ -10,6 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/httpd/httpd",
             "args": [
+                "chargen",
+                "threaded",
                 "1234"
             ],
             "stopAtEntry": false,

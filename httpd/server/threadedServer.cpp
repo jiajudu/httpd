@@ -1,5 +1,6 @@
 #include "server/threadedServer.h"
 #include "auxiliary/error.h"
+#include <sys/signal.h>
 #include <thread>
 #include <unistd.h>
 ThreadedServer::ThreadedServer(shared_ptr<Service> _service, string &_ip,
@@ -8,6 +9,7 @@ ThreadedServer::ThreadedServer(shared_ptr<Service> _service, string &_ip,
 }
 void ThreadedServer::run() {
     listener = make_shared<Listener>(ip, port, 10);
+    signal(SIGPIPE, SIG_IGN);
     while (true) {
         shared_ptr<Connection> conn = listener->accept();
         thread t(&ThreadedServer::threadRun, this, conn);

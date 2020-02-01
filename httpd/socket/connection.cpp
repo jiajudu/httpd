@@ -17,7 +17,11 @@ size_t Connection::send(const string &s) {
         }
         return s.size();
     } else {
-        return socket->send(s.c_str(), s.size(), 0);
+        ssize_t ret = static_cast<size_t>(socket->send(s.c_str(), s.size(), 0));
+        if (ret < 0 && (errno == EPIPE || errno == ECONNRESET)) {
+            close();
+        }
+        return static_cast<size_t>(ret);
     }
 }
 size_t Connection::recv(string &s,
@@ -33,7 +37,8 @@ size_t Connection::recv(string &s,
             return ret;
         });
     } else {
-        return socket->recv(const_cast<char *>(s.c_str()), s.size(), 0);
+        return static_cast<size_t>(
+            socket->recv(const_cast<char *>(s.c_str()), s.size(), 0));
     }
 }
 void Connection::non_blocking_send() {
@@ -42,8 +47,8 @@ void Connection::non_blocking_send() {
         buf_send->read([this](char *s, size_t n) -> size_t {
             return socket->send(s, n, Socket::message_dont_wait);
         });
-        if (onSendEnd && has_content && buf_send->size() == 0) {
-            onSendEnd(shared_from_this());
+        if (onSendComplete && has_content && buf_send->size() == 0) {
+            onSendComplete(shared_from_this());
         }
         if (buf_send->size() == 0 && to_close) {
             closed = true;

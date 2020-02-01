@@ -7,10 +7,6 @@ void DayTime::onConnection(shared_ptr<Connection> conn) {
     conn->send(t);
     conn->close();
 }
-void DayTime::onMessage(shared_ptr<Connection> conn, string &input_message) {
-    (void)conn;
-    (void)input_message;
-}
 size_t DayTime::decode(char *s, size_t n) {
     (void)s;
     return n;

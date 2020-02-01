@@ -2,6 +2,7 @@
 #include "auxiliary/error.h"
 #include <algorithm>
 #include <string.h>
+#include <sys/signal.h>
 #include <sys/socket.h>
 #include <unistd.h>
 PreForkServer::PreForkServer(shared_ptr<Service> _service, string &_ip,
@@ -9,6 +10,7 @@ PreForkServer::PreForkServer(shared_ptr<Service> _service, string &_ip,
     : Server(_service, _ip, _port), numProcess(_numProcess) {
 }
 void PreForkServer::run() {
+    signal(SIGPIPE, SIG_IGN);
     if (numProcess <= 0) {
         exit(1);
     }

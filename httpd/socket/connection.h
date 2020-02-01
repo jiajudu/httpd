@@ -23,7 +23,7 @@ public:
     bool active() const;
     function<void(shared_ptr<Connection>)> onClose = 0;
     function<void(shared_ptr<Connection>)> onSendBegin = 0;
-    function<void(shared_ptr<Connection>)> onSendEnd = 0;
+    function<void(shared_ptr<Connection>)> onSendComplete = 0;
 
 private:
     shared_ptr<Socket> socket;

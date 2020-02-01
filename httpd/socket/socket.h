@@ -11,8 +11,8 @@ public:
     int listen(int backlog);
     int accept();
     int close();
-    size_t recv(char *buf, size_t size, int flag);
-    size_t send(const char *buf, size_t size, int flag);
+    ssize_t recv(char *buf, size_t size, int flag);
+    ssize_t send(const char *buf, size_t size, int flag);
     static const int domain_INET;
     static const int domain_INET6;
     static const int domain_local;

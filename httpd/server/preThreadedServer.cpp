@@ -2,6 +2,7 @@
 #include "auxiliary/error.h"
 #include <algorithm>
 #include <string.h>
+#include <sys/signal.h>
 #include <sys/socket.h>
 #include <unistd.h>
 PreThreadedServer::PreThreadedServer(shared_ptr<Service> _service, string &_ip,
@@ -13,6 +14,7 @@ void PreThreadedServer::run() {
     if (numThreads <= 0) {
         exit(1);
     }
+    signal(SIGPIPE, SIG_IGN);
     vector<thread> threads;
     for (int i = 0; i < numThreads; i++) {
         threads.push_back(thread(&PreThreadedServer::worker_main, this));
@@ -38,6 +40,5 @@ void PreThreadedServer::worker_main() {
                 conn->close();
             }
         }
-        conn->close();
     }
 }

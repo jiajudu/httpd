@@ -43,6 +43,7 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
     };
     auto connection_send_end = [&](shared_ptr<Connection> conn) -> void {
         multiplexer->mod_connection_fd(conn, true, false);
+        service->onSendComplete(conn);
     };
     multiplexer->add_event_fd(event_fd);
     multiplexer->eventfd_read_callback = [&](int _fd) -> void {
@@ -57,7 +58,7 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                 multiplexer->add_connection_fd(conn, true, false);
                 conn->onClose = connection_close;
                 conn->onSendBegin = connection_send_begin;
-                conn->onSendEnd = connection_send_end;
+                conn->onSendComplete = connection_send_end;
                 service->onConnection(conn);
             }
         }

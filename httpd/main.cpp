@@ -6,6 +6,7 @@
 #include "server/reactorServer.h"
 #include "server/threadPoolReactorServer.h"
 #include "server/threadedServer.h"
+#include "service/chargen.h"
 #include "service/daytime.h"
 #include "service/discard.h"
 #include "service/echo.h"
@@ -22,6 +23,8 @@ shared_ptr<Service> get_service(string &service_name) {
         return make_shared<DayTime>();
     } else if (service_name == "timestamp") {
         return make_shared<Timestamp>();
+    } else if (service_name == "chargen") {
+        return make_shared<Chargen>();
     } else {
         exit(1);
     }
