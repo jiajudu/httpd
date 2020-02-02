@@ -3,12 +3,14 @@
 #include "auxiliary/std.h"
 #include "socket/socket.h"
 #include <any>
+#include <limits.h>
 #include <memory>
+#include <time.h>
 #include <vector>
+class Timer;
 class Connection : public enable_shared_from_this<Connection> {
 public:
-    Connection(shared_ptr<Socket> socket, bool is_non_blocking = false);
-
+    Connection(shared_ptr<Socket> socket);
     size_t send(const string &s);
     size_t recv(string &s);
     void non_blocking_send();
@@ -16,7 +18,6 @@ public:
     int close();
     int shutdown();
     shared_ptr<Socket> get_socket() const;
-    bool get_is_non_blocking() const;
     bool can_be_sent() const;
     int get_fd() const;
     bool has_content_to_send() const;
@@ -26,12 +27,15 @@ public:
     function<void(shared_ptr<Connection>)> onSendComplete = 0;
     function<size_t(char *s_buf, size_t n_buf)> decode = 0;
     any data;
+    time_t deactivation_time = LONG_MAX;
+    void set_deactivation(int seconds);
+    shared_ptr<Timer> timer;
 
 private:
     shared_ptr<Socket> socket;
-    bool is_non_blocking;
     shared_ptr<Buffer> buf_recv;
     shared_ptr<Buffer> buf_send;
     bool to_close;
     bool closed;
+    int deactivation_seconds;
 };

@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     }
     string ip(argv[1]);
     uint16_t port = static_cast<uint16_t>(stoi(string(argv[2])));
-    shared_ptr<Connection> conn = Connector::connect(ip, port, true);
+    shared_ptr<Connection> conn = Connector::connect(ip, port);
     int fop = fcntl(1, F_GETFL);
     fcntl(1, F_SETFL, fop | O_NONBLOCK);
     string message;

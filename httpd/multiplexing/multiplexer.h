@@ -9,6 +9,7 @@ public:
                                    bool event_read, bool event_write) = 0;
     virtual void del_connection_fd(shared_ptr<Connection> connection) = 0;
     virtual void add_event_fd(int fd) = 0;
+    virtual void remove_event_fd(int fd) = 0;
     virtual void read() = 0;
     virtual size_t get_socket_number() = 0;
     function<void(shared_ptr<Connection> connection)> socket_read_callback = 0;

@@ -6,22 +6,11 @@ void Sendfile::onConnection(shared_ptr<Connection> conn) {
     FILE *f = fopen("../../../project/gfwlist/gfwlist.txt", "r");
     conn->data = shared_ptr<FILE>(f, [](FILE *fp) -> void { fclose(fp); });
     char buf[4096];
-    if (conn->get_is_non_blocking()) {
-        size_t ret = fread(buf, 1, 4096, f);
-        if (ret == 0) {
-            conn->close();
-        } else {
-            conn->send(string(buf, buf + ret));
-        }
+    size_t ret = fread(buf, 1, 4096, f);
+    if (ret == 0) {
+        conn->close();
     } else {
-        while (conn->active()) {
-            size_t ret = fread(buf, 1, 4096, f);
-            if (ret == 0) {
-                conn->close();
-            } else {
-                conn->send(string(buf, buf + ret));
-            }
-        }
+        conn->send(string(buf, buf + ret));
     }
 }
 void Sendfile::onSendComplete(shared_ptr<Connection> conn) {

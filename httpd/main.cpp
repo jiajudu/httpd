@@ -1,16 +1,12 @@
-#include "server/forkServer.h"
-#include "server/iterativeServer.h"
-#include "server/preForkServer.h"
-#include "server/preThreadedServer.h"
 #include "server/processPoolReactorServer.h"
 #include "server/reactorServer.h"
 #include "server/threadPoolReactorServer.h"
-#include "server/threadedServer.h"
 #include "service/chargen.h"
 #include "service/chat.h"
 #include "service/daytime.h"
 #include "service/discard.h"
 #include "service/echo.h"
+#include "service/limitedEcho.h"
 #include "service/sendfile.h"
 #include "service/timestamp.h"
 #include <iostream>
@@ -31,6 +27,8 @@ shared_ptr<Service> get_service(string &service_name) {
         return make_shared<Sendfile>();
     } else if (service_name == "chat") {
         return make_shared<Chat>();
+    } else if (service_name == "limitedecho") {
+        return make_shared<LimitedEcho>();
     } else {
         exit(1);
     }
@@ -41,21 +39,11 @@ shared_ptr<Server> get_server(shared_ptr<Service> service, string &server_name,
     server_option.process_number = 4;
     server_option.thread_number = 4;
     server_option.max_connection_number = 4;
-    if (server_name == "fork") {
-        return make_shared<ForkServer>(service, ip, port, server_option);
-    } else if (server_name == "iterative") {
-        return make_shared<IterativeServer>(service, ip, port, server_option);
-    } else if (server_name == "prefork") {
-        return make_shared<PreForkServer>(service, ip, port, server_option);
-    } else if (server_name == "prethreaded") {
-        return make_shared<PreThreadedServer>(service, ip, port, server_option);
-    } else if (server_name == "processpollreactor") {
+    if (server_name == "processpollreactor") {
         return make_shared<ProcessPoolReactorServer>(service, ip, port,
                                                      server_option);
     } else if (server_name == "reactor") {
         return make_shared<ReactorServer>(service, ip, port, server_option);
-    } else if (server_name == "threaded") {
-        return make_shared<ThreadedServer>(service, ip, port, server_option);
     } else if (server_name == "threadpoolreactor") {
         return make_shared<ThreadPoolReactorServer>(service, ip, port,
                                                     server_option);

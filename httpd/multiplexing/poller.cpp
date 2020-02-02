@@ -17,6 +17,9 @@ void Poller::del_connection_fd(shared_ptr<Connection> connection) {
 void Poller::add_event_fd(int fd) {
     events.insert(fd);
 }
+void Poller::remove_event_fd(int fd) {
+    events.erase(fd);
+}
 void Poller::read() {
     vector<struct pollfd> pfds;
     for (auto it = sockets.begin(); it != sockets.end(); it++) {

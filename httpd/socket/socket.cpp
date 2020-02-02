@@ -13,15 +13,13 @@ const int Socket::domain_INET = AF_INET;
 const int Socket::domain_INET6 = AF_INET6;
 const int Socket::domain_local = AF_LOCAL;
 const int Socket::message_dont_wait = MSG_DONTWAIT;
-Socket::Socket(int domain_, bool is_non_blocking_)
-    : domain(domain_), is_non_blocking(is_non_blocking_) {
+Socket::Socket(int domain_) : domain(domain_) {
     fd = socket(domain, SOCK_STREAM, 0);
     if (fd < 0) {
         syscall_error();
     }
 }
-Socket::Socket(int fd_, int domain_, bool is_non_blocking_)
-    : fd(fd_), domain(domain_), is_non_blocking(is_non_blocking_) {
+Socket::Socket(int fd_, int domain_) : fd(fd_), domain(domain_) {
 }
 int Socket::bind(string &ip, uint16_t port) {
     int ret = 0;

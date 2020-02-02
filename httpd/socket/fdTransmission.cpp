@@ -30,12 +30,10 @@ void FDTransmission::send_conn(shared_ptr<Connection> conn) {
     }
     struct iovec iov[1];
     struct msghdr msg;
-    char buf[16];
+    char buf[8];
     int connfd = conn->get_socket()->get_fd();
     int domain = conn->get_socket()->get_domain();
-    bool non_blocking = conn->get_is_non_blocking();
     memcpy(buf, &domain, sizeof(int));
-    memcpy(buf + 8, &non_blocking, sizeof(bool));
     iov[0].iov_base = buf;
     iov[0].iov_len = 16;
     msg.msg_name = 0;
@@ -57,7 +55,7 @@ void FDTransmission::send_conn(shared_ptr<Connection> conn) {
 shared_ptr<Connection> FDTransmission::recv_conn() {
     struct iovec iov[1];
     struct msghdr msg;
-    char buf[24];
+    char buf[8];
     iov[0].iov_base = buf;
     iov[0].iov_len = 16;
     msg.msg_name = 0;
@@ -70,7 +68,5 @@ shared_ptr<Connection> FDTransmission::recv_conn() {
     recvmsg(fd, &msg, 0);
     int connfd = *(int *)CMSG_DATA(&cm);
     int domain = *(reinterpret_cast<int *>(buf));
-    bool non_blocking = *(reinterpret_cast<bool *>(buf + 8));
-    return make_shared<Connection>(
-        make_shared<Socket>(connfd, domain, non_blocking), non_blocking);
+    return make_shared<Connection>(make_shared<Socket>(connfd, domain));
 }

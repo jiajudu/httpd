@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/httpd/httpd",
             "args": [
-                "sendfile",
+                "limitedecho",
                 "reactor",
                 "1234"
             ],

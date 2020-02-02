@@ -5,8 +5,8 @@
 #include <string>
 class Socket : Noncopyable {
 public:
-    Socket(int domain_, bool is_non_blocking_);
-    Socket(int fd_, int domain_, bool is_non_blocking_);
+    Socket(int domain_);
+    Socket(int fd_, int domain_);
     int bind(string &ip, uint16_t port);
     int listen(int backlog);
     int accept();
@@ -24,5 +24,4 @@ public:
 private:
     int fd;
     int domain;
-    bool is_non_blocking;
 };

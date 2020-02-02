@@ -23,7 +23,8 @@
         "iosfwd": "cpp",
         "new": "cpp",
         "ostream": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "unordered_set": "cpp"
     },
     "python.pythonPath": "/usr/bin/python3"
 }

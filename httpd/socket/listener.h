@@ -6,13 +6,10 @@
 #include <string>
 class Listener {
 public:
-    Listener(string &ip, uint16_t port, int backlog,
-             bool is_non_blocking = false);
+    Listener(string &ip, uint16_t port, int backlog);
     shared_ptr<Connection> accept();
     int close();
     int get_fd() const;
-
 private:
     shared_ptr<Socket> socket;
-    bool is_non_blocking;
 };
