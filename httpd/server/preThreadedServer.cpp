@@ -6,17 +6,18 @@
 #include <sys/socket.h>
 #include <unistd.h>
 PreThreadedServer::PreThreadedServer(shared_ptr<Service> _service, string &_ip,
-                                     uint16_t _port, int _numThreads)
-    : Server(_service, _ip, _port), numThreads(_numThreads),
-      tasks(_numThreads) {
+                                     uint16_t _port,
+                                     ServerOption &server_option)
+    : Server(_service, _ip, _port, server_option),
+      tasks(server_option.thread_number) {
 }
 void PreThreadedServer::run() {
-    if (numThreads <= 0) {
+    if (option.thread_number <= 0) {
         exit(1);
     }
     signal(SIGPIPE, SIG_IGN);
     vector<thread> threads;
-    for (int i = 0; i < numThreads; i++) {
+    for (int i = 0; i < option.thread_number; i++) {
         threads.push_back(thread(&PreThreadedServer::worker_main, this));
     }
     listener = make_shared<Listener>(ip, port, 10);

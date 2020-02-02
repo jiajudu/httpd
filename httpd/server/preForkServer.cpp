@@ -6,15 +6,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 PreForkServer::PreForkServer(shared_ptr<Service> _service, string &_ip,
-                             uint16_t _port, int _numProcess)
-    : Server(_service, _ip, _port), numProcess(_numProcess) {
+                             uint16_t _port, ServerOption &server_option)
+    : Server(_service, _ip, _port, server_option) {
 }
 void PreForkServer::run() {
     signal(SIGPIPE, SIG_IGN);
-    if (numProcess <= 0) {
+    if (option.process_number <= 0) {
         exit(1);
     }
-    for (int i = 0; i < numProcess; i++) {
+    for (int i = 0; i < option.process_number; i++) {
         FDTransmission fdt;
         int pid = fork();
         if (pid < 0) {

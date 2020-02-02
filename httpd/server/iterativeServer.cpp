@@ -1,8 +1,8 @@
 #include "server/iterativeServer.h"
 #include <sys/signal.h>
 IterativeServer::IterativeServer(shared_ptr<Service> _service, string &_ip,
-                                 uint16_t _port)
-    : Server(_service, _ip, _port) {
+                                 uint16_t _port, ServerOption &server_option)
+    : Server(_service, _ip, _port, server_option) {
 }
 void IterativeServer::run() {
     listener = make_shared<Listener>(ip, port, 10);

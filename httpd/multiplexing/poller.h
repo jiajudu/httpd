@@ -9,6 +9,7 @@ public:
     void del_connection_fd(shared_ptr<Connection> connection);
     void add_event_fd(int fd);
     void read();
+    size_t get_socket_number();
 
 private:
     unordered_map<int, pair<shared_ptr<Connection>, int>> sockets;

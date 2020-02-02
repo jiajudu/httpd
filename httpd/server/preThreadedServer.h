@@ -11,11 +11,10 @@
 class PreThreadedServer : public Server {
 public:
     PreThreadedServer(shared_ptr<Service> _service, string &ip, uint16_t port,
-                      int numThreaded);
+                      ServerOption &server_option);
     void run();
 
 private:
-    int numThreads;
     BlockingQueue<shared_ptr<Connection>> tasks;
     void worker_main();
 };

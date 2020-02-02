@@ -10,15 +10,15 @@
 #include <unistd.h>
 ProcessPoolReactorServer::ProcessPoolReactorServer(shared_ptr<Service> _service,
                                                    string &_ip, uint16_t _port,
-                                                   int _numProcess)
-    : Server(_service, _ip, _port), numProcess(_numProcess) {
+                                                   ServerOption &server_option)
+    : Server(_service, _ip, _port, server_option) {
 }
 void ProcessPoolReactorServer::run() {
-    if (numProcess <= 0) {
+    if (option.process_number <= 0) {
         exit(1);
     }
     vector<FDTransmission> child_fds;
-    for (int i = 0; i < numProcess; i++) {
+    for (int i = 0; i < option.process_number; i++) {
         FDTransmission fdt;
         int pid = fork();
         if (pid < 0) {
@@ -38,7 +38,7 @@ void ProcessPoolReactorServer::run() {
     listener = make_shared<Listener>(ip, port, 10, true);
     for (long i = 0;; i++) {
         shared_ptr<Connection> conn = listener->accept();
-        child_fds[i % numProcess].send_conn(conn);
+        child_fds[i % option.process_number].send_conn(conn);
         conn->close();
     }
 }
@@ -59,11 +59,16 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     multiplexer->eventfd_read_callback = [&](int _fd) -> void {
         if (_fd == fdt.get_fd()) {
             shared_ptr<Connection> conn = fdt.recv_conn();
-            multiplexer->add_connection_fd(conn, true, false);
-            conn->onClose = connection_close;
-            conn->onSendBegin = connection_send_begin;
-            conn->onSendComplete = connection_send_end;
-            service->onConnection(conn);
+            if (multiplexer->get_socket_number() >=
+                static_cast<size_t>(option.max_connection_number)) {
+                conn->close();
+            } else {
+                multiplexer->add_connection_fd(conn, true, false);
+                conn->onClose = connection_close;
+                conn->onSendBegin = connection_send_begin;
+                conn->onSendComplete = connection_send_end;
+                service->onConnection(conn);
+            }
         }
     };
     multiplexer->socket_read_callback =

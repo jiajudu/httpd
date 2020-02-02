@@ -36,26 +36,29 @@ shared_ptr<Service> get_service(string &service_name) {
     }
 }
 shared_ptr<Server> get_server(shared_ptr<Service> service, string &server_name,
-                              string ip, uint16_t port, int extra_parameter) {
+                              string ip, uint16_t port) {
+    ServerOption server_option;
+    server_option.process_number = 4;
+    server_option.thread_number = 4;
+    server_option.max_connection_number = 4;
     if (server_name == "fork") {
-        return make_shared<ForkServer>(service, ip, port);
+        return make_shared<ForkServer>(service, ip, port, server_option);
     } else if (server_name == "iterative") {
-        return make_shared<IterativeServer>(service, ip, port);
+        return make_shared<IterativeServer>(service, ip, port, server_option);
     } else if (server_name == "prefork") {
-        return make_shared<PreForkServer>(service, ip, port, extra_parameter);
+        return make_shared<PreForkServer>(service, ip, port, server_option);
     } else if (server_name == "prethreaded") {
-        return make_shared<PreThreadedServer>(service, ip, port,
-                                              extra_parameter);
+        return make_shared<PreThreadedServer>(service, ip, port, server_option);
     } else if (server_name == "processpollreactor") {
         return make_shared<ProcessPoolReactorServer>(service, ip, port,
-                                                     extra_parameter);
+                                                     server_option);
     } else if (server_name == "reactor") {
-        return make_shared<ReactorServer>(service, ip, port);
+        return make_shared<ReactorServer>(service, ip, port, server_option);
     } else if (server_name == "threaded") {
-        return make_shared<ThreadedServer>(service, ip, port);
+        return make_shared<ThreadedServer>(service, ip, port, server_option);
     } else if (server_name == "threadpoolreactor") {
         return make_shared<ThreadPoolReactorServer>(service, ip, port,
-                                                    extra_parameter);
+                                                    server_option);
     } else {
         exit(1);
     }
@@ -69,7 +72,7 @@ int main(int argc, char **argv) {
     uint16_t port = static_cast<uint16_t>(stoi(string(argv[3])));
     string ip("127.0.0.1");
     shared_ptr<Service> service = get_service(service_name);
-    shared_ptr<Server> server = get_server(service, server_name, ip, port, 2);
+    shared_ptr<Server> server = get_server(service, server_name, ip, port);
     server->run();
     return 0;
 }

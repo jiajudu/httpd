@@ -10,11 +10,10 @@
 class PreForkServer : public Server {
 public:
     PreForkServer(shared_ptr<Service> _service, string &ip, uint16_t port,
-                  int numProcess);
+                  ServerOption &server_option);
     void run();
 
 private:
-    int numProcess;
     vector<pair<FDTransmission, bool>> childs;
     void child_main(FDTransmission &fdt);
     size_t getAvailableProcess();

@@ -10,10 +10,9 @@
 class ProcessPoolReactorServer : public Server {
 public:
     ProcessPoolReactorServer(shared_ptr<Service> _service, string &ip,
-                             uint16_t port, int numProcess);
+                             uint16_t port, ServerOption &server_option);
     void run();
 
 private:
-    int numProcess;
     void child_main(FDTransmission &fdt);
 };

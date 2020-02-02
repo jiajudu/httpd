@@ -5,8 +5,8 @@
 #include <poll.h>
 #include <unordered_set>
 ReactorServer::ReactorServer(shared_ptr<Service> _service, string &_ip,
-                             uint16_t _port)
-    : Server(_service, _ip, _port) {
+                             uint16_t _port, ServerOption &server_option)
+    : Server(_service, _ip, _port, server_option) {
 }
 void ReactorServer::run() {
     listener = make_shared<Listener>(ip, port, 10, true);
@@ -26,11 +26,16 @@ void ReactorServer::run() {
     multiplexer->eventfd_read_callback = [&](int _fd) -> void {
         if (listener->get_fd() == _fd) {
             shared_ptr<Connection> conn = listener->accept();
-            multiplexer->add_connection_fd(conn, true, false);
-            conn->onClose = connection_close;
-            conn->onSendBegin = connection_send_begin;
-            conn->onSendComplete = connection_send_end;
-            service->onConnection(conn);
+            if (multiplexer->get_socket_number() >=
+                static_cast<size_t>(option.max_connection_number)) {
+                conn->close();
+            } else {
+                multiplexer->add_connection_fd(conn, true, false);
+                conn->onClose = connection_close;
+                conn->onSendBegin = connection_send_begin;
+                conn->onSendComplete = connection_send_end;
+                service->onConnection(conn);
+            }
         }
     };
     multiplexer->socket_read_callback =

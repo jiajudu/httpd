@@ -63,3 +63,6 @@ void Poller::read() {
         }
     }
 }
+size_t Poller::get_socket_number() {
+    return sockets.size();
+}
