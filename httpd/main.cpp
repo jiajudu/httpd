@@ -7,6 +7,7 @@
 #include "server/threadPoolReactorServer.h"
 #include "server/threadedServer.h"
 #include "service/chargen.h"
+#include "service/chat.h"
 #include "service/daytime.h"
 #include "service/discard.h"
 #include "service/echo.h"
@@ -28,6 +29,8 @@ shared_ptr<Service> get_service(string &service_name) {
         return make_shared<Chargen>();
     } else if (service_name == "sendfile") {
         return make_shared<Sendfile>();
+    } else if (service_name == "chat") {
+        return make_shared<Chat>();
     } else {
         exit(1);
     }

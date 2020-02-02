@@ -12,6 +12,5 @@ public:
     void onSendComplete(shared_ptr<Connection> conn);
 
 private:
-    size_t decode(char *buf, size_t n);
     string chars;
 };

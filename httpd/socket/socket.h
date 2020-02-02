@@ -10,6 +10,7 @@ public:
     int bind(string &ip, uint16_t port);
     int listen(int backlog);
     int accept();
+    int connect(string &ip, uint16_t port);
     int close();
     ssize_t recv(char *buf, size_t size, int flag);
     ssize_t send(const char *buf, size_t size, int flag);

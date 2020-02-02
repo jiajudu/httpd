@@ -24,14 +24,13 @@ size_t Connection::send(const string &s) {
         return static_cast<size_t>(ret);
     }
 }
-size_t Connection::recv(string &s,
-                        function<size_t(char *s_buf, size_t n_buf)> decode) {
+size_t Connection::recv(string &s) {
     if (is_non_blocking) {
-        if (decode == 0) {
-            agreement_error("decoder cannot be null");
-        }
         return buf_recv->read([&](char *s_buf, size_t n_buf) -> size_t {
-            size_t ret = decode(s_buf, n_buf);
+            size_t ret = n_buf;
+            if (decode != 0) {
+                ret = decode(s_buf, n_buf);
+            }
             string str(s_buf, s_buf + ret);
             swap(s, str);
             return ret;

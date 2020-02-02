@@ -2,9 +2,6 @@
 #include <linux/unistd.h>
 #include <memory>
 #include <stdlib.h>
-Sendfile::Sendfile() {
-    decoder = bind(&Sendfile::decode, this, _1, _2);
-}
 void Sendfile::onConnection(shared_ptr<Connection> conn) {
     FILE *f = fopen("../../../project/gfwlist/gfwlist.txt", "r");
     conn->data = shared_ptr<FILE>(f, [](FILE *fp) -> void { fclose(fp); });
@@ -36,8 +33,4 @@ void Sendfile::onSendComplete(shared_ptr<Connection> conn) {
     } else {
         conn->send(string(buf, buf + ret));
     }
-}
-size_t Sendfile::decode(char *s, size_t n) {
-    (void)s;
-    return n;
 }

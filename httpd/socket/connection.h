@@ -10,8 +10,7 @@ public:
     Connection(shared_ptr<Socket> socket, bool is_non_blocking = false);
 
     size_t send(const string &s);
-    size_t recv(string &s,
-                function<size_t(char *s_buf, size_t n_buf)> decode = 0);
+    size_t recv(string &s);
     void non_blocking_send();
     void non_blocking_recv();
     int close();
@@ -25,6 +24,7 @@ public:
     function<void(shared_ptr<Connection>)> onClose = 0;
     function<void(shared_ptr<Connection>)> onSendBegin = 0;
     function<void(shared_ptr<Connection>)> onSendComplete = 0;
+    function<size_t(char *s_buf, size_t n_buf)> decode = 0;
     any data;
 
 private:

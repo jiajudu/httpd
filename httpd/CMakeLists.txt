@@ -1,16 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 project(httpd)
-file(GLOB SRCS
-    "*.h"
-    "*.cpp"
-)
 include_directories(.)
-add_subdirectory(server)
-add_subdirectory(socket)
-add_subdirectory(auxiliary)
-add_subdirectory(service)
-add_subdirectory(multiplexing)
-add_executable(httpd ${SRCS})
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/server SERVER_SOURCES)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/socket SOCKET_SOURCES)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/auxiliary AUXILIARY_SOURCES)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/service SERVICE_SOURCES)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/multiplexing MULTIPLEXING_SOURCES)
+add_executable(httpd main.cpp ${SERVER_SOURCES} ${SOCKET_SOURCES} ${AUXILIARY_SOURCES} ${SERVICE_SOURCES} ${MULTIPLEXING_SOURCES})
+add_executable(chat_client client/chat.cpp ${SOCKET_SOURCES} ${AUXILIARY_SOURCES} ${MULTIPLEXING_SOURCES})
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -Werror -Wconversion -Wold-style-cast -Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -march=native -std=c++17 -pthread -rdynamic")

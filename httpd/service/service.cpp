@@ -9,3 +9,6 @@ void Service::onMessage(shared_ptr<Connection> conn, string &input_message) {
 void Service::onSendComplete(shared_ptr<Connection> conn) {
     (void)conn;
 }
+void Service::onDisconnect(shared_ptr<Connection> conn) {
+    (void)conn;
+}

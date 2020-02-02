@@ -46,6 +46,7 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
     auto connection_close = [&](shared_ptr<Connection> conn) -> void {
         multiplexer->del_connection_fd(conn);
+        service->onDisconnect(conn);
     };
     auto connection_send_begin = [&](shared_ptr<Connection> conn) -> void {
         multiplexer->mod_connection_fd(conn, true, true);
@@ -69,7 +70,7 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
         [&](shared_ptr<Connection> conn) -> void {
         conn->non_blocking_recv();
         string message;
-        conn->recv(message, service->decoder);
+        conn->recv(message);
         if (message.size() > 0) {
             service->onMessage(conn, message);
         }
@@ -79,6 +80,7 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     multiplexer->socket_error_callback =
         [&](shared_ptr<Connection> conn) -> void {
         multiplexer->del_connection_fd(conn);
+        service->onDisconnect(conn);
         conn->shutdown();
     };
     multiplexer->socket_hang_up_callback =

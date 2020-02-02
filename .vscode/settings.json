@@ -24,5 +24,6 @@
         "new": "cpp",
         "ostream": "cpp",
         "streambuf": "cpp"
-    }
+    },
+    "python.pythonPath": "/usr/bin/python3"
 }

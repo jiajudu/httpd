@@ -1,7 +1,5 @@
 #include "service/timestamp.h"
 #include "auxiliary/tm.h"
-Timestamp::Timestamp() {
-}
 void Timestamp::onConnection(shared_ptr<Connection> conn) {
     timeval t = get_time();
     time_t sec = t.tv_sec;
@@ -10,8 +8,4 @@ void Timestamp::onConnection(shared_ptr<Connection> conn) {
     reverse(s.begin(), s.end());
     conn->send(s);
     conn->close();
-}
-size_t Timestamp::decode(char *s, size_t n) {
-    (void)s;
-    return n;
 }

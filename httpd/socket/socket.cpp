@@ -37,7 +37,7 @@ int Socket::bind(string &ip, uint16_t port) {
             syscall_error();
         }
     } else {
-        agreement_error("protocal not implemented.");
+        agreement_error("Protocal not implemented.");
     }
     return ret;
 }
@@ -59,8 +59,26 @@ int Socket::accept() {
         }
         return connfd;
     } else {
-        agreement_error("protocal not implemented.");
+        agreement_error("Protocal not implemented.");
     }
+}
+int Socket::connect(string &ip, uint16_t port) {
+    int ret = 0;
+    if (domain == domain_INET) {
+        struct sockaddr_in sockaddr;
+        memset(&sockaddr, 0, sizeof(sockaddr));
+        sockaddr.sin_family = domain_INET;
+        sockaddr.sin_addr.s_addr = inet_ston(ip);
+        sockaddr.sin_port = htons(port);
+        ret = ::connect(fd, reinterpret_cast<struct sockaddr *>(&sockaddr),
+                        sizeof(sockaddr));
+        if (ret < 0) {
+            syscall_error();
+        }
+    } else {
+        agreement_error("Protocal not implemented.");
+    }
+    return ret;
 }
 ssize_t Socket::recv(char *buf, size_t size, int flag) {
     ssize_t ret = ::recv(fd, buf, size, flag);
