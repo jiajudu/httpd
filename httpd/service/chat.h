@@ -5,6 +5,7 @@
 #include "socket/socket.h"
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <unordered_set>
 class Chat : public Service {
 public:
@@ -14,4 +15,5 @@ public:
 
 private:
     unordered_set<shared_ptr<Connection>> conns;
+    mutex lock;
 };
