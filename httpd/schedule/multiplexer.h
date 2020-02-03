@@ -1,21 +1,17 @@
 #pragma once
 #include "socket/connection.h"
-#include "socket/listener.h"
+class EventHandler {
+public:
+    function<void(int fd)> read = 0;
+    function<void(int fd)> write = 0;
+    function<void(int fd)> hang_up = 0;
+    function<void(int fd)> error = 0;
+};
 class Multiplexer {
 public:
-    virtual void add_connection_fd(shared_ptr<Connection> connection,
-                                   bool event_read, bool event_write) = 0;
-    virtual void mod_connection_fd(shared_ptr<Connection> connection,
-                                   bool event_read, bool event_write) = 0;
-    virtual void del_connection_fd(shared_ptr<Connection> connection) = 0;
-    virtual void add_event_fd(int fd) = 0;
-    virtual void remove_event_fd(int fd) = 0;
+    virtual void add_fd(int fd, bool event_read, bool event_write,
+                        shared_ptr<EventHandler> eh) = 0;
+    virtual void mod_fd(int fd, bool event_read, bool event_write) = 0;
+    virtual void del_fd(int fd) = 0;
     virtual void read() = 0;
-    virtual size_t get_socket_number() = 0;
-    function<void(shared_ptr<Connection> connection)> socket_read_callback = 0;
-    function<void(shared_ptr<Connection> connection)> socket_write_callback = 0;
-    function<void(shared_ptr<Connection> connection)> socket_hang_up_callback =
-        0;
-    function<void(shared_ptr<Connection> connection)> socket_error_callback = 0;
-    function<void(int)> eventfd_read_callback = 0;
 };

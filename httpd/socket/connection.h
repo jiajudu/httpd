@@ -7,7 +7,7 @@
 #include <memory>
 #include <time.h>
 #include <vector>
-class Timer;
+class TimerPool;
 class Connection : public enable_shared_from_this<Connection> {
 public:
     Connection(shared_ptr<Socket> socket);
@@ -29,7 +29,7 @@ public:
     any data;
     time_t deactivation_time = LONG_MAX;
     void set_deactivation(int seconds);
-    shared_ptr<Timer> timer;
+    shared_ptr<TimerPool> timer;
 
 private:
     shared_ptr<Socket> socket;

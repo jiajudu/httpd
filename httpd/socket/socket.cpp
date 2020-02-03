@@ -2,6 +2,7 @@
 #include "auxiliary/error.h"
 #include "auxiliary/ip.h"
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <memory>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -60,7 +61,7 @@ int Socket::accept() {
         agreement_error("Protocal not implemented.");
     }
 }
-int Socket::connect(string &ip, uint16_t port) {
+int Socket::connect(string &ip, uint16_t port, bool non_blocking) {
     int ret = 0;
     if (domain == domain_INET) {
         struct sockaddr_in sockaddr;
@@ -68,15 +69,23 @@ int Socket::connect(string &ip, uint16_t port) {
         sockaddr.sin_family = domain_INET;
         sockaddr.sin_addr.s_addr = inet_ston(ip);
         sockaddr.sin_port = htons(port);
+        if (non_blocking) {
+            fcntl(fd, F_SETFL, O_NONBLOCK);
+        }
         ret = ::connect(fd, reinterpret_cast<struct sockaddr *>(&sockaddr),
                         sizeof(sockaddr));
         if (ret < 0) {
-            syscall_error();
+            if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
+                return -1;
+            } else {
+                syscall_error();
+            }
+        } else {
+            return 0;
         }
     } else {
         agreement_error("Protocal not implemented.");
     }
-    return ret;
 }
 ssize_t Socket::recv(char *buf, size_t size, int flag) {
     ssize_t ret = ::recv(fd, buf, size, flag);

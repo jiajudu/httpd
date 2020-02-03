@@ -10,6 +10,9 @@ shared_ptr<Connection> Listener::accept() {
         make_shared<Socket>(fd, socket->get_domain()));
 }
 int Listener::close() {
+    if (onClose) {
+        onClose();
+    }
     return socket->close();
 }
 int Listener::get_fd() const {

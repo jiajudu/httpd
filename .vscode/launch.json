@@ -10,9 +10,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/httpd/httpd",
             "args": [
-                "limitedecho",
+                "chat",
                 "reactor",
-                "1234"
+                "1235"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

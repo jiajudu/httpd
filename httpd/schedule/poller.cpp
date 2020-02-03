@@ -1,71 +1,51 @@
 #include "schedule/poller.h"
 #include "auxiliary/error.h"
 #include <poll.h>
-void Poller::add_connection_fd(shared_ptr<Connection> connection,
-                               bool event_read, bool event_write) {
-    sockets[connection->get_fd()] = pair<shared_ptr<Connection>, int>(
-        connection, (event_read ? 1 : 0) | (event_write ? 2 : 0));
+void Poller::add_fd(int fd, bool event_read, bool event_write,
+                    shared_ptr<EventHandler> eh) {
+    fds[fd] = pair<short, shared_ptr<EventHandler>>(
+        static_cast<short>((event_read ? (POLLIN | POLLPRI | POLLRDHUP) : 0) |
+                           (event_write ? POLLOUT : 0)),
+        eh);
 }
-void Poller::mod_connection_fd(shared_ptr<Connection> connection,
-                               bool event_read, bool event_write) {
-    sockets[connection->get_fd()].second =
-        (event_read ? 1 : 0) | (event_write ? 2 : 0);
+void Poller::mod_fd(int fd, bool event_read, bool event_write) {
+    fds[fd].first =
+        static_cast<short>((event_read ? (POLLIN | POLLPRI | POLLRDHUP) : 0) |
+                           (event_write ? POLLOUT : 0));
 }
-void Poller::del_connection_fd(shared_ptr<Connection> connection) {
-    sockets.erase(connection->get_fd());
-}
-void Poller::add_event_fd(int fd) {
-    events.insert(fd);
-}
-void Poller::remove_event_fd(int fd) {
-    events.erase(fd);
+void Poller::del_fd(int fd) {
+    fds.erase(fd);
 }
 void Poller::read() {
     vector<struct pollfd> pfds;
-    for (auto it = sockets.begin(); it != sockets.end(); it++) {
-        short int event = 0;
-        if (it->second.second & 1) {
-            event |= (POLLIN | POLLPRI | POLLRDHUP);
-        }
-        if (it->second.second & 2) {
-            event |= POLLOUT;
-        }
-        pfds.push_back({it->first, event, 0});
-    }
-    for (int eventfd : events) {
-        pfds.push_back({eventfd, POLLIN, 0});
+    for (auto it = fds.begin(); it != fds.end(); it++) {
+        pfds.push_back({it->first, it->second.first, 0});
     }
     int ret = poll(&pfds[0], pfds.size(), -1);
     if (ret < 0) {
         syscall_error();
     }
     for (auto &pfd : pfds) {
-        if (events.find(pfd.fd) != events.end()) {
-            if ((pfd.revents & POLLIN) && eventfd_read_callback) {
-                eventfd_read_callback(pfd.fd);
-            }
-        } else if (sockets.find(pfd.fd) != sockets.end()) {
-            shared_ptr<Connection> conn = sockets[pfd.fd].first;
+        int fd = pfd.fd;
+        if (fds.find(fd) != fds.end()) {
+            shared_ptr<EventHandler> eh = fds[fd].second;
             if (pfd.revents & POLLNVAL) {
                 agreement_error("poll invalid fd");
             } else if (pfd.revents & POLLERR) {
-                if (socket_error_callback) {
-                    socket_error_callback(conn);
+                if (eh->error) {
+                    eh->error(fd);
                 }
             } else {
-                if ((pfd.revents & POLLIN) && socket_read_callback) {
-                    socket_read_callback(conn);
+                if ((pfd.revents & POLLIN) && eh->read) {
+                    eh->read(fd);
                 }
-                if ((pfd.revents & POLLOUT) && socket_write_callback) {
-                    socket_write_callback(conn);
+                if ((pfd.revents & POLLOUT) && eh->write) {
+                    eh->write(fd);
                 }
-                if ((pfd.revents & POLLRDHUP) && socket_hang_up_callback) {
-                    socket_hang_up_callback(conn);
+                if ((pfd.revents & POLLRDHUP) && eh->hang_up) {
+                    eh->hang_up(fd);
                 }
             }
         }
     }
-}
-size_t Poller::get_socket_number() {
-    return sockets.size();
 }

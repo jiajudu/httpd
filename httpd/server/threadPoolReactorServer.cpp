@@ -1,8 +1,11 @@
 #include "server/threadPoolReactorServer.h"
 #include "auxiliary/blockingQueue.h"
 #include "auxiliary/error.h"
+#include "schedule/connectionPool.h"
+#include "schedule/eventPool.h"
 #include "schedule/multiplexer.h"
 #include "schedule/poller.h"
+#include "schedule/timerPool.h"
 #include "unistd.h"
 #include <poll.h>
 #include <sys/eventfd.h>
@@ -40,68 +43,26 @@ void ThreadPoolReactorServer::run() {
 void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                                           int event_fd) {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    multiplexer->add_event_fd(event_fd);
-    shared_ptr<Timer> timer = make_shared<Timer>();
-    timer->add_timer_callback = [&](int fd) -> void {
-        multiplexer->add_event_fd(fd);
-    };
-    timer->remove_timer_callback = [&](int fd) -> void {
-        multiplexer->remove_event_fd(fd);
-    };
-    multiplexer->add_event_fd(timer->get_sfd());
-    multiplexer->eventfd_read_callback = [&](int _fd) -> void {
-        if (_fd == event_fd) {
-            eventfd_t e;
-            eventfd_read(event_fd, &e);
+    shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
+    shared_ptr<ConnectionPool> connection_pool =
+        make_shared<ConnectionPool>(multiplexer, service);
+    shared_ptr<TimerPool> timer = make_shared<TimerPool>(multiplexer);
+    event_pool->add_event(
+        event_fd, [event_fd, connection_pool, &conn_q, timer, this]() -> void {
             queue<shared_ptr<Connection>> conns;
             conn_q.pop_all(conns);
             while (conns.size() > 0) {
                 shared_ptr<Connection> conn = conns.front();
                 conns.pop();
-                if (multiplexer->get_socket_number() >=
+                if (connection_pool->size() >=
                     static_cast<size_t>(option.max_connection_number)) {
                     conn->close();
                 } else {
                     conn->timer = timer;
-                    multiplexer->add_connection_fd(conn, true, false);
-                    conn->onClose = [&](shared_ptr<Connection> _c) -> void {
-                        multiplexer->del_connection_fd(_c);
-                        service->onDisconnect(_c);
-                    };
-                    conn->onSendBegin = [&](shared_ptr<Connection> _c) -> void {
-                        multiplexer->mod_connection_fd(_c, true, true);
-                    };
-                    conn->onSendComplete =
-                        [&](shared_ptr<Connection> _c) -> void {
-                        multiplexer->mod_connection_fd(_c, true, false);
-                        service->onSendComplete(_c);
-                    };
-                    service->onConnection(conn);
+                    connection_pool->add_connection(conn);
                 }
             }
-        } else {
-            timer->event(_fd);
-        }
-    };
-    multiplexer->socket_read_callback =
-        [&](shared_ptr<Connection> conn) -> void {
-        conn->non_blocking_recv();
-        string message;
-        conn->recv(message);
-        if (message.size() > 0) {
-            service->onMessage(conn, message);
-        }
-    };
-    multiplexer->socket_write_callback =
-        [&](shared_ptr<Connection> conn) -> void { conn->non_blocking_send(); };
-    multiplexer->socket_error_callback =
-        [&](shared_ptr<Connection> conn) -> void {
-        multiplexer->del_connection_fd(conn);
-        service->onDisconnect(conn);
-        conn->shutdown();
-    };
-    multiplexer->socket_hang_up_callback =
-        [&](shared_ptr<Connection> conn) -> void { conn->close(); };
+        });
     while (true) {
         multiplexer->read();
     }

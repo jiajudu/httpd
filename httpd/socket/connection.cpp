@@ -1,6 +1,7 @@
 #include "socket/connection.h"
 #include "auxiliary/error.h"
 #include "auxiliary/tm.h"
+#include "schedule/timerPool.h"
 Connection::Connection(shared_ptr<Socket> _socket)
     : socket(_socket), to_close(false), closed(false) {
     buf_recv = make_shared<Buffer>();
@@ -40,7 +41,9 @@ void Connection::non_blocking_send() {
         }
         socket->close();
     }
-    timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    if (timer && deactivation_seconds) {
+        timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    }
 }
 void Connection::non_blocking_recv() {
     char buf[4096];
@@ -49,7 +52,9 @@ void Connection::non_blocking_recv() {
         recved = socket->recv(buf, 4096, Socket::message_dont_wait);
         buf_recv->write(buf, recved);
     }
-    timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    if (timer && deactivation_seconds) {
+        timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    }
 }
 int Connection::close() {
     if (has_content_to_send()) {
@@ -85,5 +90,7 @@ bool Connection::active() const {
 }
 void Connection::set_deactivation(int seconds) {
     deactivation_seconds = seconds;
-    timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    if (timer && deactivation_seconds) {
+        timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    }
 }
