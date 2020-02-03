@@ -1,8 +1,8 @@
 #include "server/threadPoolReactorServer.h"
 #include "auxiliary/blockingQueue.h"
 #include "auxiliary/error.h"
-#include "multiplexing/multiplexer.h"
-#include "multiplexing/poller.h"
+#include "schedule/multiplexer.h"
+#include "schedule/poller.h"
 #include "unistd.h"
 #include <poll.h>
 #include <sys/eventfd.h>

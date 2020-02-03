@@ -1,7 +1,7 @@
 #include "server/processPoolReactorServer.h"
 #include "auxiliary/error.h"
-#include "multiplexing/multiplexer.h"
-#include "multiplexing/poller.h"
+#include "schedule/multiplexer.h"
+#include "schedule/poller.h"
 #include <algorithm>
 #include <iostream>
 #include <poll.h>

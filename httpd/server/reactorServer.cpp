@@ -1,8 +1,8 @@
 #include "server/reactorServer.h"
 #include "auxiliary/error.h"
 #include "auxiliary/tm.h"
-#include "multiplexing/multiplexer.h"
-#include "multiplexing/poller.h"
+#include "schedule/multiplexer.h"
+#include "schedule/poller.h"
 #include <poll.h>
 #include <unordered_set>
 ReactorServer::ReactorServer(shared_ptr<Service> _service, string &_ip,

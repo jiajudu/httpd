@@ -1,7 +1,7 @@
 #include "auxiliary/blockingQueue.h"
 #include "auxiliary/ip.h"
-#include "multiplexing/multiplexer.h"
-#include "multiplexing/poller.h"
+#include "schedule/multiplexer.h"
+#include "schedule/poller.h"
 #include "socket/connector.h"
 #include <fcntl.h>
 #include <iostream>
