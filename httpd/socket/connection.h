@@ -7,7 +7,7 @@
 #include <memory>
 #include <time.h>
 #include <vector>
-class TimerPool;
+class ConnectionPool;
 class Connection : public enable_shared_from_this<Connection> {
 public:
     Connection(shared_ptr<Socket> socket);
@@ -22,14 +22,14 @@ public:
     int get_fd() const;
     bool has_content_to_send() const;
     bool active() const;
-    function<void(shared_ptr<Connection>)> onClose = 0;
-    function<void(shared_ptr<Connection>)> onSendBegin = 0;
-    function<void(shared_ptr<Connection>)> onSendComplete = 0;
+    // function<void(shared_ptr<Connection>)> onClose = 0;
+    // function<void(shared_ptr<Connection>)> onSendBegin = 0;
+    // function<void(shared_ptr<Connection>)> onSendComplete = 0;
     function<size_t(char *s_buf, size_t n_buf)> decode = 0;
     any data;
     time_t deactivation_time = LONG_MAX;
     void set_deactivation(int seconds);
-    shared_ptr<TimerPool> timer;
+    shared_ptr<ConnectionPool> pool;
 
 private:
     shared_ptr<Socket> socket;
@@ -37,5 +37,5 @@ private:
     shared_ptr<Buffer> buf_send;
     bool to_close;
     bool closed;
-    int deactivation_seconds;
+    int deactivation_seconds = 0;
 };

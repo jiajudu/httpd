@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
-class TimerPool {
+class TimerPool : enable_shared_from_this<TimerPool> {
 public:
     TimerPool(shared_ptr<Multiplexer> _multiplexer);
     int set_timeout(function<void(void)> op, double seconds);
@@ -12,6 +12,7 @@ public:
     void cancel(int id);
     void event(int id);
     int get_sfd();
+    shared_ptr<Multiplexer> get_multiplexer() const;
 
 private:
     shared_ptr<Multiplexer> multiplexer;

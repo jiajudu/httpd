@@ -1,20 +1,25 @@
 #pragma once
 #include "auxiliary/std.h"
-#include "schedule/connectionPool.h"
 #include "schedule/multiplexer.h"
 #include "socket/connection.h"
 #include "socket/listener.h"
 #include "socket/socket.h"
 #include <memory>
 #include <string>
-class ListenerPool {
+#include <unordered_map>
+class ListenerPool : enable_shared_from_this<ListenerPool> {
 public:
-    ListenerPool(shared_ptr<Multiplexer> _multiplexer,
-                 shared_ptr<Listener> _listener);
-    function<void(shared_ptr<Connection>)> onConnection = 0;
+    ListenerPool(shared_ptr<Multiplexer> _multiplexer);
+    void add_listener(shared_ptr<Listener> listener,
+                      function<void(shared_ptr<Connection>)> onConnection);
+    void remove_listener(shared_ptr<Listener> listener);
+    shared_ptr<Multiplexer> get_multiplexer() const;
 
 private:
     shared_ptr<Multiplexer> multiplexer;
-    shared_ptr<Listener> listener;
+    unordered_map<int, pair<shared_ptr<Listener>,
+                            function<void(shared_ptr<Connection> conn)>>>
+        listeners;
     shared_ptr<EventHandler> eh;
+    void read_callback(int fd);
 };

@@ -26,7 +26,7 @@ int FDTransmission::get_fd() const {
 }
 void FDTransmission::send_conn(shared_ptr<Connection> conn) {
     if (!conn->can_be_sent()) {
-        agreement_error("this connection cannot be sent");
+        fatal_error("this connection cannot be sent");
     }
     struct iovec iov[1];
     struct msghdr msg;

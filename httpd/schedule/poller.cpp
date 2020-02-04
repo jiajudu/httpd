@@ -30,7 +30,7 @@ void Poller::read() {
         if (fds.find(fd) != fds.end()) {
             shared_ptr<EventHandler> eh = fds[fd].second;
             if (pfd.revents & POLLNVAL) {
-                agreement_error("poll invalid fd");
+                fatal_error("poll invalid fd");
             } else if (pfd.revents & POLLERR) {
                 if (eh->error) {
                     eh->error(fd);

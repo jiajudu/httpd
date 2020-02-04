@@ -24,7 +24,9 @@
         "new": "cpp",
         "ostream": "cpp",
         "streambuf": "cpp",
-        "unordered_set": "cpp"
+        "unordered_set": "cpp",
+        "istream": "cpp",
+        "ratio": "cpp"
     },
     "python.pythonPath": "/usr/bin/python3"
 }

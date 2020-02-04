@@ -1,9 +1,15 @@
 #include "schedule/timerPool.h"
+#include "auxiliary/error.h"
 #include "auxiliary/tm.h"
 #include <sys/timerfd.h>
 #include <unistd.h>
 TimerPool::TimerPool(shared_ptr<Multiplexer> _multiplexer)
     : multiplexer(_multiplexer) {
+    if (multiplexer->timer_pool != 0) {
+        fatal_error("Duplicated timer pool.");
+    } else {
+        multiplexer->timer_pool = shared_from_this();
+    }
     eh = make_shared<EventHandler>();
     sfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     struct itimerspec it;
@@ -73,4 +79,7 @@ void TimerPool::event(int id) {
 }
 int TimerPool::get_sfd() {
     return sfd;
+}
+shared_ptr<Multiplexer> TimerPool::get_multiplexer() const {
+    return multiplexer;
 }

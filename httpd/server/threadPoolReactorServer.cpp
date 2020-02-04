@@ -45,10 +45,25 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
     shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
     shared_ptr<ConnectionPool> connection_pool =
-        make_shared<ConnectionPool>(multiplexer, service);
+        make_shared<ConnectionPool>(multiplexer);
     shared_ptr<TimerPool> timer = make_shared<TimerPool>(multiplexer);
+    shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
+    conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
+        service->onConnection(conn);
+    };
+    conn_ev->onMessage = [this](shared_ptr<Connection> conn,
+                                string &message) -> void {
+        service->onMessage(conn, message);
+    };
+    conn_ev->onSendComplete = [this](shared_ptr<Connection> conn) -> void {
+        service->onSendComplete(conn);
+    };
+    conn_ev->onDisconnect = [this](shared_ptr<Connection> conn) -> void {
+        service->onDisconnect(conn);
+    };
     event_pool->add_event(
-        event_fd, [event_fd, connection_pool, &conn_q, timer, this]() -> void {
+        event_fd,
+        [event_fd, &connection_pool, &conn_q, this, &conn_ev]() -> void {
             queue<shared_ptr<Connection>> conns;
             conn_q.pop_all(conns);
             while (conns.size() > 0) {
@@ -58,8 +73,7 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                     static_cast<size_t>(option.max_connection_number)) {
                     conn->close();
                 } else {
-                    conn->timer = timer;
-                    connection_pool->add_connection(conn);
+                    connection_pool->add_connection(conn, conn_ev);
                 }
             }
         });

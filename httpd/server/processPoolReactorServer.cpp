@@ -49,18 +49,31 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
     shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
     shared_ptr<ConnectionPool> connection_pool =
-        make_shared<ConnectionPool>(multiplexer, service);
+        make_shared<ConnectionPool>(multiplexer);
     shared_ptr<TimerPool> timer = make_shared<TimerPool>(multiplexer);
+    shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
+    conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
+        service->onConnection(conn);
+    };
+    conn_ev->onMessage = [this](shared_ptr<Connection> conn,
+                                string &message) -> void {
+        service->onMessage(conn, message);
+    };
+    conn_ev->onSendComplete = [this](shared_ptr<Connection> conn) -> void {
+        service->onSendComplete(conn);
+    };
+    conn_ev->onDisconnect = [this](shared_ptr<Connection> conn) -> void {
+        service->onDisconnect(conn);
+    };
     event_pool->add_event(
         fdt.get_fd(),
-        [&fdt, connection_pool, this, timer]() -> void {
+        [&fdt, connection_pool, this, timer, &conn_ev]() -> void {
             shared_ptr<Connection> conn = fdt.recv_conn();
             if (connection_pool->size() >=
                 static_cast<size_t>(option.max_connection_number)) {
                 conn->close();
             } else {
-                conn->timer = timer;
-                connection_pool->add_connection(conn);
+                connection_pool->add_connection(conn, conn_ev);
             }
         },
         false);

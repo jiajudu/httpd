@@ -1,4 +1,5 @@
 #include "socket/listener.h"
+#include "schedule/listenerPool.h"
 Listener::Listener(string &ip, uint16_t port, int backlog) {
     socket = make_shared<Socket>(Socket::domain_INET);
     socket->bind(ip, port);
@@ -10,8 +11,8 @@ shared_ptr<Connection> Listener::accept() {
         make_shared<Socket>(fd, socket->get_domain()));
 }
 int Listener::close() {
-    if (onClose) {
-        onClose();
+    if (pool) {
+        pool->remove_listener(shared_from_this());
     }
     return socket->close();
 }

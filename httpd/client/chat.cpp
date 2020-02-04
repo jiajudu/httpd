@@ -1,6 +1,7 @@
 #include "auxiliary/blockingQueue.h"
 #include "auxiliary/ip.h"
-#include "schedule/clientConnectionPool.h"
+#include "schedule/connectionPool.h"
+#include "schedule/connectorPool.h"
 #include "schedule/eventPool.h"
 #include "schedule/multiplexer.h"
 #include "schedule/poller.h"
@@ -24,8 +25,10 @@ int main(int argc, char **argv) {
     bool working = true;
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
     shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
-    shared_ptr<ClientConnectionPool> connection_pool =
-        make_shared<ClientConnectionPool>(multiplexer);
+    shared_ptr<ConnectionPool> connection_pool =
+        make_shared<ConnectionPool>(multiplexer);
+    shared_ptr<ConnectorPool> connector_pool =
+        make_shared<ConnectorPool>(multiplexer);
     shared_ptr<Connection> c;
     event_pool->add_event(
         0,
@@ -48,34 +51,36 @@ int main(int argc, char **argv) {
             }
         },
         false);
-    connection_pool->onConnection = [&c](shared_ptr<Connection> conn) -> void {
-        c = conn;
-        if (c) {
-            cout << "Connection Success\n";
-        }
-        conn->decode = [](char *s_buf, size_t n_buf) {
-            for (char *p = s_buf + n_buf - 1; p >= s_buf; p--) {
-                if (*p == '\n') {
-                    return static_cast<size_t>(p - s_buf + 1);
-                }
-            }
-            return static_cast<size_t>(0);
-        };
-    };
-    connection_pool->onMessage = [](shared_ptr<Connection> conn,
-                                    string &m) -> void {
+    shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
+    conn_ev->onMessage = [](shared_ptr<Connection> conn, string &m) -> void {
         (void)conn;
         if (m.size() > 0) {
             cout << m;
         }
     };
-    connection_pool->onDisconnect = [&c,
-                                     &working](shared_ptr<Connection> conn) {
-        if (conn == c) {
-            working = false;
-        }
+    conn_ev->onDisconnect = [&working](shared_ptr<Connection> conn) {
+        (void)conn;
+        working = false;
     };
-    connection_pool->connect(ip, port);
+    connector_pool->connect(
+        ip, port,
+        [&c, &connection_pool, &conn_ev](shared_ptr<Connection> conn) -> void {
+            c = conn;
+            cout << "Connection Success\n";
+            conn->decode = [](char *s_buf, size_t n_buf) {
+                for (char *p = s_buf + n_buf - 1; p >= s_buf; p--) {
+                    if (*p == '\n') {
+                        return static_cast<size_t>(p - s_buf + 1);
+                    }
+                }
+                return static_cast<size_t>(0);
+            };
+            connection_pool->add_connection(conn, conn_ev);
+        },
+        [](shared_ptr<Connection> conn) -> void {
+            (void)conn;
+            cout << "Connection Error\n";
+        });
     cout << "Start connection\n";
     while (working) {
         multiplexer->read();

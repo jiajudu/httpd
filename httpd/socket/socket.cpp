@@ -9,6 +9,7 @@
 #include <string.h>
 #include <string>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
 const int Socket::domain_INET = AF_INET;
 const int Socket::domain_INET6 = AF_INET6;
@@ -35,8 +36,10 @@ int Socket::bind(string &ip, uint16_t port) {
         if (ret < 0) {
             syscall_error();
         }
+        local_ip = ip;
+        local_port = port;
     } else {
-        agreement_error("Protocal not implemented.");
+        fatal_error("Protocal not implemented.");
     }
     return ret;
 }
@@ -56,9 +59,11 @@ int Socket::accept() {
         if (connfd < 0) {
             syscall_error();
         }
+        remote_ip = inet_ntos(addr.sin_addr.s_addr);
+        remote_port = ntohs(addr.sin_port);
         return connfd;
     } else {
-        agreement_error("Protocal not implemented.");
+        fatal_error("Protocal not implemented.");
     }
 }
 int Socket::connect(string &ip, uint16_t port, bool non_blocking) {
@@ -83,8 +88,27 @@ int Socket::connect(string &ip, uint16_t port, bool non_blocking) {
         } else {
             return 0;
         }
+    } else if (domain == domain_local) {
+        struct sockaddr_un sockaddr;
+        memset(&sockaddr, 0, sizeof(sockaddr));
+        sockaddr.sun_family = AF_UNIX;
+        memcpy(sockaddr.sun_path, ip.c_str(), ip.size() + 1);
+        if (non_blocking) {
+            fcntl(fd, F_SETFL, O_NONBLOCK);
+        }
+        ret = ::connect(fd, reinterpret_cast<struct sockaddr *>(&sockaddr),
+                        sizeof(sockaddr));
+        if (ret < 0) {
+            if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
+                return -1;
+            } else {
+                syscall_error();
+            }
+        } else {
+            return 0;
+        }
     } else {
-        agreement_error("Protocal not implemented.");
+        fatal_error("Protocal not implemented.");
     }
 }
 ssize_t Socket::recv(char *buf, size_t size, int flag) {
@@ -113,4 +137,16 @@ int Socket::get_domain() const {
 }
 int Socket::get_fd() const {
     return fd;
+}
+string Socket::get_local_ip() const {
+    return local_ip;
+}
+uint16_t Socket::get_local_port() const {
+    return local_port;
+}
+string Socket::get_remote_ip() const {
+    return remote_ip;
+}
+uint16_t Socket::get_remote_port() const {
+    return remote_port;
 }

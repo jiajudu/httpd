@@ -1,7 +1,13 @@
 #include "schedule/eventPool.h"
+#include "auxiliary/error.h"
 #include <sys/eventfd.h>
 EventPool::EventPool(shared_ptr<Multiplexer> _multiplexer)
     : multiplexer(_multiplexer) {
+    if (multiplexer->event_pool != 0) {
+        fatal_error("Duplicated event pool.");
+    } else {
+        multiplexer->event_pool = shared_from_this();
+    }
     eh = make_shared<EventHandler>();
     eh->read = bind(&EventPool::event, this, _1);
 }
@@ -21,4 +27,7 @@ void EventPool::event(int fd) {
         }
         ops[fd].second();
     }
+}
+shared_ptr<Multiplexer> EventPool::get_multiplexer() const {
+    return multiplexer;
 }

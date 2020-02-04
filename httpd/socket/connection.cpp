@@ -1,6 +1,7 @@
 #include "socket/connection.h"
 #include "auxiliary/error.h"
 #include "auxiliary/tm.h"
+#include "schedule/connectionPool.h"
 #include "schedule/timerPool.h"
 Connection::Connection(shared_ptr<Socket> _socket)
     : socket(_socket), to_close(false), closed(false) {
@@ -10,8 +11,8 @@ Connection::Connection(shared_ptr<Socket> _socket)
 size_t Connection::send(const string &s) {
     bool has_content = buf_send->size() > 0;
     buf_send->write(s.c_str(), s.size());
-    if (onSendBegin && !has_content && buf_send->size() > 0) {
-        onSendBegin(shared_from_this());
+    if (pool && !has_content && buf_send->size() > 0) {
+        pool->onSendBegin(shared_from_this());
     }
     return s.size();
 }
@@ -31,18 +32,19 @@ void Connection::non_blocking_send() {
     buf_send->read([this](char *s, size_t n) -> size_t {
         return socket->send(s, n, Socket::message_dont_wait);
     });
-    if (onSendComplete && has_content && buf_send->size() == 0) {
-        onSendComplete(shared_from_this());
+    if (pool && has_content && buf_send->size() == 0) {
+        pool->onSendComplete(shared_from_this());
     }
     if (buf_send->size() == 0 && to_close) {
         closed = true;
-        if (onClose) {
-            onClose(shared_from_this());
+        if (pool) {
+            pool->onClose(shared_from_this());
         }
         socket->close();
     }
-    if (timer && deactivation_seconds) {
-        timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    if (pool && pool->get_multiplexer()->timer_pool && deactivation_seconds) {
+        pool->get_multiplexer()->timer_pool->set_deactivation(
+            shared_from_this(), deactivation_seconds);
     }
 }
 void Connection::non_blocking_recv() {
@@ -52,8 +54,9 @@ void Connection::non_blocking_recv() {
         recved = socket->recv(buf, 4096, Socket::message_dont_wait);
         buf_recv->write(buf, recved);
     }
-    if (timer && deactivation_seconds) {
-        timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    if (pool && pool->get_multiplexer()->timer_pool && deactivation_seconds) {
+        pool->get_multiplexer()->timer_pool->set_deactivation(
+            shared_from_this(), deactivation_seconds);
     }
 }
 int Connection::close() {
@@ -62,8 +65,8 @@ int Connection::close() {
         return 1;
     } else {
         closed = true;
-        if (onClose) {
-            onClose(shared_from_this());
+        if (pool) {
+            pool->onClose(shared_from_this());
         }
         return socket->close();
     }
@@ -90,7 +93,8 @@ bool Connection::active() const {
 }
 void Connection::set_deactivation(int seconds) {
     deactivation_seconds = seconds;
-    if (timer && deactivation_seconds) {
-        timer->set_deactivation(shared_from_this(), deactivation_seconds);
+    if (pool && pool->get_multiplexer()->timer_pool && deactivation_seconds) {
+        pool->get_multiplexer()->timer_pool->set_deactivation(
+            shared_from_this(), deactivation_seconds);
     }
 }

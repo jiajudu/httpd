@@ -20,8 +20,16 @@ public:
     static const int message_dont_wait;
     int get_domain() const;
     int get_fd() const;
+    string get_local_ip() const;
+    uint16_t get_local_port() const;
+    string get_remote_ip() const;
+    uint16_t get_remote_port() const;
 
 private:
     int fd;
     int domain;
+    string local_ip;
+    uint16_t local_port;
+    string remote_ip;
+    uint16_t remote_port;
 };

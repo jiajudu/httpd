@@ -9,7 +9,7 @@ void syscall_error() {
     printf("syscall error %s\n", errorStr);
     exit(1);
 }
-void agreement_error(const char *s) {
+void fatal_error(const char *s) {
     printf("agreement error %s\n", s);
     exit(1);
 }
