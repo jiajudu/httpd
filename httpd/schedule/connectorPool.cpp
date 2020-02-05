@@ -3,13 +3,7 @@
 #include "schedule/poller.h"
 #include <poll.h>
 #include <sys/socket.h>
-ConnectorPool::ConnectorPool(shared_ptr<Multiplexer> _multiplexer)
-    : multiplexer(_multiplexer) {
-    if (multiplexer->connector_pool != 0) {
-        fatal_error("Duplicated timer pool.");
-    } else {
-        multiplexer->connector_pool = shared_from_this();
-    }
+ConnectorPool::ConnectorPool() {
     eh = make_shared<EventHandler>();
     eh->write = bind(&ConnectorPool::cannect_callback, this, _1);
 }
@@ -46,7 +40,4 @@ void ConnectorPool::cannect_callback(int fd) {
 }
 size_t ConnectorPool::size() {
     return conns.size();
-}
-shared_ptr<Multiplexer> ConnectorPool::get_multiplexer() const {
-    return multiplexer;
 }

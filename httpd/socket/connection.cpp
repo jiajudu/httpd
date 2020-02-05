@@ -2,6 +2,7 @@
 #include "auxiliary/error.h"
 #include "auxiliary/tm.h"
 #include "schedule/connectionPool.h"
+#include "schedule/multiplexer.h"
 #include "schedule/timerPool.h"
 Connection::Connection(shared_ptr<Socket> _socket)
     : socket(_socket), to_close(false), closed(false) {
@@ -42,9 +43,9 @@ void Connection::non_blocking_send() {
         }
         socket->close();
     }
-    if (pool && pool->get_multiplexer()->timer_pool && deactivation_seconds) {
-        pool->get_multiplexer()->timer_pool->set_deactivation(
-            shared_from_this(), deactivation_seconds);
+    if (pool && pool->multiplexer->timers && deactivation_seconds) {
+        pool->multiplexer->timers->set_deactivation(shared_from_this(),
+                                                    deactivation_seconds);
     }
 }
 void Connection::non_blocking_recv() {
@@ -54,9 +55,9 @@ void Connection::non_blocking_recv() {
         recved = socket->recv(buf, 4096, Socket::message_dont_wait);
         buf_recv->write(buf, recved);
     }
-    if (pool && pool->get_multiplexer()->timer_pool && deactivation_seconds) {
-        pool->get_multiplexer()->timer_pool->set_deactivation(
-            shared_from_this(), deactivation_seconds);
+    if (pool && pool->multiplexer->timers && deactivation_seconds) {
+        pool->multiplexer->timers->set_deactivation(shared_from_this(),
+                                                    deactivation_seconds);
     }
 }
 int Connection::close() {
@@ -93,8 +94,8 @@ bool Connection::active() const {
 }
 void Connection::set_deactivation(int seconds) {
     deactivation_seconds = seconds;
-    if (pool && pool->get_multiplexer()->timer_pool && deactivation_seconds) {
-        pool->get_multiplexer()->timer_pool->set_deactivation(
-            shared_from_this(), deactivation_seconds);
+    if (pool && pool->multiplexer->timers && deactivation_seconds) {
+        pool->multiplexer->timers->set_deactivation(shared_from_this(),
+                                                    deactivation_seconds);
     }
 }

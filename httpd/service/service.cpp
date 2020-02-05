@@ -12,3 +12,7 @@ void Service::onSendComplete(shared_ptr<Connection> conn) {
 void Service::onDisconnect(shared_ptr<Connection> conn) {
     (void)conn;
 }
+any &Service::tl() {
+    thread_local any a;
+    return a;
+}

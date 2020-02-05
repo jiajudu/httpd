@@ -1,6 +1,6 @@
 #include "schedule/listenerPool.h"
-ListenerPool::ListenerPool(shared_ptr<Multiplexer> _multiplexer)
-    : multiplexer(_multiplexer) {
+#include "schedule/multiplexer.h"
+ListenerPool::ListenerPool() {
     eh = make_shared<EventHandler>();
     eh->read = bind(&ListenerPool::read_callback, this, _1);
 }
@@ -21,7 +21,4 @@ void ListenerPool::read_callback(int fd) {
 }
 void ListenerPool::remove_listener(shared_ptr<Listener> listener) {
     multiplexer->del_fd(listener->get_fd());
-}
-shared_ptr<Multiplexer> ListenerPool::get_multiplexer() const {
-    return multiplexer;
 }

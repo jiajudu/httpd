@@ -1,22 +1,22 @@
 #pragma once
-#include "schedule/multiplexer.h"
+#include "schedule/eventhandler.h"
 #include "service/service.h"
 #include "socket/connection.h"
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-class ConnectorPool : enable_shared_from_this<ConnectorPool> {
+class Multiplexer;
+class ConnectorPool {
 public:
-    ConnectorPool(shared_ptr<Multiplexer> _multiplexer);
+    ConnectorPool();
     void connect(string &ip, uint16_t port,
                  function<void(shared_ptr<Connection> conn)> onSuccess,
                  function<void(shared_ptr<Connection> conn)> onError);
     size_t size();
-    shared_ptr<Multiplexer> get_multiplexer() const;
+    Multiplexer *multiplexer;
 
 private:
     void add_connection(shared_ptr<Connection> connection);
-    shared_ptr<Multiplexer> multiplexer;
     shared_ptr<EventHandler> eh;
     class SocketInfo {
     public:

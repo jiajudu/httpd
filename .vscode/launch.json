@@ -10,9 +10,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/httpd/httpd",
             "args": [
-                "chat",
+                "http",
                 "reactor",
-                "1235"
+                "1234"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -27,7 +27,11 @@
                 }
             ],
             "preLaunchTask": "g++ build active file",
-            "miDebuggerPath": "/usr/bin/gdb"
+            "miDebuggerPath": "/usr/bin/gdb",
+            "sourceFileMap": {
+                "/build/glibc-4WA41p": "/usr/src/glibc",
+                "/build/gcc-9-NSfpi_/gcc-9-9.2.1/src": "/usr/src/gcc-9/gcc-9.2.0"
+            }
         }
     ]
 }

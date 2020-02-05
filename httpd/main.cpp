@@ -6,6 +6,7 @@
 #include "service/daytime.h"
 #include "service/discard.h"
 #include "service/echo.h"
+#include "service/http.h"
 #include "service/limitedEcho.h"
 #include "service/sendfile.h"
 #include "service/timestamp.h"
@@ -29,6 +30,8 @@ shared_ptr<Service> get_service(string &service_name) {
         return make_shared<Chat>();
     } else if (service_name == "limitedecho") {
         return make_shared<LimitedEcho>();
+    } else if (service_name == "http") {
+        return make_shared<HTTP>();
     } else {
         exit(1);
     }

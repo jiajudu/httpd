@@ -24,11 +24,9 @@ int main(int argc, char **argv) {
     string message;
     bool working = true;
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
-    shared_ptr<ConnectionPool> connection_pool =
-        make_shared<ConnectionPool>(multiplexer);
-    shared_ptr<ConnectorPool> connector_pool =
-        make_shared<ConnectorPool>(multiplexer);
+    shared_ptr<EventPool> event_pool = multiplexer->events;
+    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
+    shared_ptr<ConnectorPool> connector_pool = multiplexer->connectors;
     shared_ptr<Connection> c;
     event_pool->add_event(
         0,

@@ -1,6 +1,7 @@
 #include "server/reactorServer.h"
 #include "auxiliary/error.h"
 #include "auxiliary/tm.h"
+#include "fastcgi/fastcgi.h"
 #include "schedule/connectionPool.h"
 #include "schedule/listenerPool.h"
 #include "schedule/multiplexer.h"
@@ -14,12 +15,12 @@ ReactorServer::ReactorServer(shared_ptr<Service> _service, string &_ip,
 }
 void ReactorServer::run() {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
+    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
+    shared_ptr<ListenerPool> listener_pool = multiplexer->listeners;
     listener = make_shared<Listener>(ip, port, 10);
-    shared_ptr<ListenerPool> listener_pool =
-        make_shared<ListenerPool>(multiplexer);
-    shared_ptr<ConnectionPool> connection_pool =
-        make_shared<ConnectionPool>(multiplexer);
-    shared_ptr<TimerPool> timer = make_shared<TimerPool>(multiplexer);
+    string fcgi_ip("127.0.0.1");
+    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(fcgi_ip, 8000, multiplexer);
+    service->tl() = fcgi;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);

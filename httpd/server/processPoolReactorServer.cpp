@@ -1,10 +1,12 @@
 #include "server/processPoolReactorServer.h"
 #include "auxiliary/error.h"
+#include "fastcgi/fastcgi.h"
 #include "schedule/connectionPool.h"
 #include "schedule/eventPool.h"
 #include "schedule/multiplexer.h"
 #include "schedule/poller.h"
 #include "schedule/timerPool.h"
+#include "service/service.h"
 #include <algorithm>
 #include <iostream>
 #include <poll.h>
@@ -47,10 +49,12 @@ void ProcessPoolReactorServer::run() {
 }
 void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
-    shared_ptr<ConnectionPool> connection_pool =
-        make_shared<ConnectionPool>(multiplexer);
-    shared_ptr<TimerPool> timer = make_shared<TimerPool>(multiplexer);
+    shared_ptr<EventPool> event_pool = multiplexer->events;
+    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
+    shared_ptr<TimerPool> timer = multiplexer->timers;
+    string fcgi_ip("127.0.0.1");
+    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(fcgi_ip, 8000, multiplexer);
+    service->tl() = fcgi;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);

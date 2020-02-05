@@ -226,4 +226,6 @@ void HTTP::process_request(shared_ptr<Connection> conn) {
             ptr = r.content.size();
         }
     }
+    shared_ptr<FastCGI> fcgi = any_cast<shared_ptr<FastCGI>>(tl());
+    fcgi->submit(task, conn);
 }

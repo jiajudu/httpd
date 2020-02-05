@@ -1,6 +1,7 @@
 #include "server/threadPoolReactorServer.h"
 #include "auxiliary/blockingQueue.h"
 #include "auxiliary/error.h"
+#include "fastcgi/fastcgi.h"
 #include "schedule/connectionPool.h"
 #include "schedule/eventPool.h"
 #include "schedule/multiplexer.h"
@@ -43,11 +44,13 @@ void ThreadPoolReactorServer::run() {
 void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                                           int event_fd) {
     shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    shared_ptr<EventPool> event_pool = make_shared<EventPool>(multiplexer);
-    shared_ptr<ConnectionPool> connection_pool =
-        make_shared<ConnectionPool>(multiplexer);
-    shared_ptr<TimerPool> timer = make_shared<TimerPool>(multiplexer);
+    shared_ptr<EventPool> event_pool = multiplexer->events;
+    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
+    shared_ptr<TimerPool> timer = multiplexer->timers;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
+    string fcgi_ip("127.0.0.1");
+    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(fcgi_ip, 8000, multiplexer);
+    service->tl() = fcgi;
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);
     };

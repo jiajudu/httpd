@@ -1,5 +1,6 @@
 #pragma once
 #include "auxiliary/std.h"
+#include "fastcgi/fastcgi.h"
 #include "service/service.h"
 #include <string>
 #include <unordered_map>
@@ -14,7 +15,7 @@ public:
     string protocol;
     string content;
 };
-class HTTP : Service {
+class HTTP : public Service {
 public:
     HTTP();
     void onConnection(shared_ptr<Connection> conn);

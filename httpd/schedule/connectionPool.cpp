@@ -2,13 +2,7 @@
 #include "auxiliary/error.h"
 #include "schedule/poller.h"
 #include <poll.h>
-ConnectionPool::ConnectionPool(shared_ptr<Multiplexer> _multiplexer)
-    : multiplexer(_multiplexer) {
-    if (multiplexer->connection_pool != 0) {
-        fatal_error("Duplicated connection pool.");
-    } else {
-        multiplexer->connection_pool = shared_from_this();
-    }
+ConnectionPool::ConnectionPool() {
     eh = make_shared<EventHandler>();
     eh->read = bind(&ConnectionPool::read_callback, this, _1);
     eh->write = bind(&ConnectionPool::write_callback, this, _1);
@@ -19,7 +13,7 @@ void ConnectionPool::add_connection(shared_ptr<Connection> connection,
                                     shared_ptr<ConnectionEvent> event) {
     conns[connection->get_fd()] = make_pair(connection, event);
     multiplexer->add_fd(connection->get_fd(), true, false, eh);
-    if (event) {
+    if (event->onConnection) {
         event->onConnection(connection);
     }
 }
@@ -71,6 +65,3 @@ void ConnectionPool::onSendComplete(shared_ptr<Connection> _c) {
         event->onSendComplete(_c);
     }
 };
-shared_ptr<Multiplexer> ConnectionPool::get_multiplexer() const {
-    return multiplexer;
-}
