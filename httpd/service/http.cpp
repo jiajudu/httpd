@@ -27,13 +27,7 @@ size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
     }
 }
 HTTP::HTTP() {
-    char buf[256];
-    char *ret = getcwd(buf, 256);
-    if (ret == 0) {
-        fatal_error("Cannot get current working directory");
-    }
-    size_t len = strlen(buf);
-    cwd = string(buf, buf + len);
+    cwd = string("/root/Documents/project/httpd/www");
     set_header2env();
 }
 void HTTP::set_header2env() {

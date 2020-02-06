@@ -66,6 +66,7 @@ void FastCGI::submit(FastCGITask task, shared_ptr<Connection> _c) {
 }
 void FastCGI::onConnectionEstablished(shared_ptr<Connection> _conn,
                                       uint16_t id) {
+    _conn->decode = bind(&FastCGI::decode, this, _1, _2);
     tasks[id].fcgi_conn = _conn;
     shared_ptr<ConnectionEvent> ev = make_shared<ConnectionEvent>();
     ev->onMessage = bind(&FastCGI::onMessage, this, _1, _2, id);
@@ -86,6 +87,9 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
         uint16_t request_id = static_cast<uint16_t>(
             ((static_cast<unsigned char>(message[2]) << 8) +
              static_cast<unsigned char>(message[3])));
+        size_t len =
+            (static_cast<size_t>(static_cast<unsigned char>(message[4])) << 8) +
+            static_cast<unsigned char>(message[5]);
         if (id != request_id) {
             fatal_error("Request id mismatch.");
         }
@@ -93,9 +97,10 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
             fatal_error("The request id is invalid.");
         }
         if (message_type == FCGI_STDOUT) {
-            tasks[request_id].stdin += message.substr(sizeof(FCGI_Header));
+            tasks[request_id].stdin += message.substr(sizeof(FCGI_Header), len);
         } else if (message_type == FCGI_STDERR) {
-            tasks[request_id].stderr += message.substr(sizeof(FCGI_Header));
+            tasks[request_id].stderr +=
+                message.substr(sizeof(FCGI_Header), len);
         } else if (message_type == FCGI_END_REQUEST) {
             tasks[request_id].http_conn->send(tasks[request_id].stdin);
             tasks[request_id].http_conn->close();
@@ -111,7 +116,8 @@ size_t FastCGI::decode(char *s_buf, size_t n_buf) {
     } else {
         size_t len =
             (static_cast<size_t>(static_cast<unsigned char>(s_buf[4])) << 8) +
-            s_buf[5];
+            static_cast<unsigned char>(s_buf[5]) +
+            static_cast<unsigned char>(s_buf[6]);
         if (n_buf < sizeof(FCGI_Header) + len) {
             return 0;
         } else {
