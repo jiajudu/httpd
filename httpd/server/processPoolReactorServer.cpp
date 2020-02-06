@@ -53,7 +53,7 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
     shared_ptr<TimerPool> timer = multiplexer->timers;
     string fcgi_ip("127.0.0.1");
-    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(fcgi_ip, 8000, multiplexer);
+    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(multiplexer, fcgi_ip, 8000);
     service->tl() = fcgi;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {

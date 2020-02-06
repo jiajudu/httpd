@@ -46,36 +46,31 @@ class FastCGITask {
 public:
     void add_env(const string &key, const string &value);
     void add_content(const string &c);
-    vector<string> &get_envs();
-    vector<string> &get_stdins();
-
-private:
     vector<string> envs;
     vector<string> stdins;
+    shared_ptr<Connection> http_conn;
+    shared_ptr<Connection> fcgi_conn;
+    string stdin;
+    string stderr;
 };
 class FastCGI {
 public:
-    FastCGI(string &ip, uint16_t address, shared_ptr<Multiplexer> _m);
+    FastCGI(shared_ptr<Multiplexer> _m, string &ip, uint16_t port);
     void submit(FastCGITask task, shared_ptr<Connection> _c);
-    bool available() const;
 
 private:
-    bool is_available = false;
     shared_ptr<Multiplexer> m;
-    shared_ptr<Connection> conn;
-    uint16_t counter = 0;
-    class Result {
-    public:
-        shared_ptr<Connection> conn;
-        string stdin;
-        string stderr;
-    };
-    unordered_map<uint16_t, Result> tasks;
-    void onConnectionEstablished(shared_ptr<Connection> conn);
-    void onConnectionError(shared_ptr<Connection> conn);
-    void onMessage(shared_ptr<Connection> conn, string &message);
-    void sendBeginRequest(uint16_t id);
-    void sendParams(uint16_t id, vector<string> &ps);
-    void sendStdins(uint16_t id, vector<string> &ps);
+    string fcgi_ip;
+    uint16_t fcgi_port;
+    uint16_t counter = 1;
+    unordered_map<uint16_t, FastCGITask> tasks;
+    void onConnectionEstablished(shared_ptr<Connection> conn, uint16_t id);
+    void onConnectionError(shared_ptr<Connection> conn, uint16_t id);
+    void onMessage(shared_ptr<Connection> conn, string &message, uint16_t id);
+    void sendBeginRequest(shared_ptr<Connection> _conn, uint16_t id);
+    void sendParams(shared_ptr<Connection> _conn, uint16_t id,
+                    vector<string> &ps);
+    void sendStdins(shared_ptr<Connection> _conn, uint16_t id,
+                    vector<string> &ps);
     size_t decode(char *s_buf, size_t n_buf);
 };

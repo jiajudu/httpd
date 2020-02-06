@@ -51,8 +51,15 @@ void Connection::non_blocking_send() {
 void Connection::non_blocking_recv() {
     char buf[4096];
     size_t recved = 4096;
+    bool first = true;
     while (recved >= 4096) {
         recved = socket->recv(buf, 4096, Socket::message_dont_wait);
+        if (first) {
+            if (recved == 0) {
+                close();
+            }
+            first = false;
+        }
         buf_recv->write(buf, recved);
     }
     if (pool && pool->multiplexer->timers && deactivation_seconds) {

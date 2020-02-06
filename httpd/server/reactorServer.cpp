@@ -19,7 +19,7 @@ void ReactorServer::run() {
     shared_ptr<ListenerPool> listener_pool = multiplexer->listeners;
     listener = make_shared<Listener>(ip, port, 10);
     string fcgi_ip("127.0.0.1");
-    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(fcgi_ip, 8000, multiplexer);
+    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(multiplexer, fcgi_ip, 8000);
     service->tl() = fcgi;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {

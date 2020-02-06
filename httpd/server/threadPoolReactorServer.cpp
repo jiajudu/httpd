@@ -49,7 +49,7 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
     shared_ptr<TimerPool> timer = multiplexer->timers;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     string fcgi_ip("127.0.0.1");
-    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(fcgi_ip, 8000, multiplexer);
+    shared_ptr<FastCGI> fcgi = make_shared<FastCGI>(multiplexer, fcgi_ip, 8000);
     service->tl() = fcgi;
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);

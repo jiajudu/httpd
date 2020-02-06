@@ -26,4 +26,5 @@ private:
     };
     unordered_map<int, SocketInfo> conns;
     void cannect_callback(int fd);
+    void error_callback(int fd);
 };

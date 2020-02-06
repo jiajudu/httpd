@@ -41,7 +41,7 @@ shared_ptr<Server> get_server(shared_ptr<Service> service, string &server_name,
     ServerOption server_option;
     server_option.process_number = 4;
     server_option.thread_number = 4;
-    server_option.max_connection_number = 4;
+    server_option.max_connection_number = 100;
     if (server_name == "processpollreactor") {
         return make_shared<ProcessPoolReactorServer>(service, ip, port,
                                                      server_option);

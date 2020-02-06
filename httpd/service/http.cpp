@@ -1,30 +1,21 @@
 #include "service/http.h"
 #include "auxiliary/error.h"
 #include "fastcgi/fastcgi.h"
+#include <iostream>
 #include <string.h>
 #include <unistd.h>
 size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
                     size_t expected_length) {
     if (expected_length == 0) {
-        char *start = s_buf;
-        char *end = s_buf + n_buf;
-        long ret = 0;
-        char *p = find(start, end - 3, '\r');
-        while (p < end - 4) {
-            if (*(p + 1) == '\n' && *(p + 2) == '\r' && *(p + 3) == '\n') {
-                ret = p + 3 - s_buf;
-                break;
-            } else {
-                start = p + 1;
-            }
-            if (start >= end - 3) {
-                break;
-            }
-            if (static_cast<size_t>(start - s_buf) >= max_len) {
-                return max_len;
-            }
-            p = find(start, end - 3, '\r');
-            return ret;
+        size_t len = min(n_buf, max_len);
+        string s(s_buf, s_buf + len);
+        size_t p = s.find("\r\n\r\n");
+        if (p != string::npos) {
+            return p + 4;
+        }
+        size_t q = s.find("\r\n\n");
+        if (q != string::npos) {
+            return q + 3;
         }
         return 0;
     } else {
@@ -110,6 +101,7 @@ void HTTP::onDisconnect(shared_ptr<Connection> conn) {
     (void)conn;
 }
 int HTTP::parse_header(shared_ptr<Connection> conn, string &s) {
+    HTTPRequest &r = any_cast<HTTPRequest &>(conn->data);
     vector<string> lines;
     string::iterator it = s.begin();
     while (it + 1 < s.end()) {
@@ -126,29 +118,25 @@ int HTTP::parse_header(shared_ptr<Connection> conn, string &s) {
         error(conn, 413);
         return -1;
     }
-    string::iterator it1 = find(s.begin(), s.end(), ' ');
-    string::iterator it2 = find(it1 + 1, s.end(), ' ');
-    string method(s.begin(), it);
+    string::iterator it1 = find(lines[0].begin(), lines[0].end(), ' ');
+    string::iterator it2 = find(it1 + 1, lines[0].end(), ' ');
+    r.method = string(lines[0].begin(), it1);
+    r.uri = string(it1 + 1, it2);
     string::iterator it3 = find(it1 + 1, it2, '?');
-    string path(it1 + 1, it3);
-    if (path.size() == 0 || path[0] != '/') {
+    r.path = string(it1 + 1, it3);
+    if (r.path.size() == 0 || r.path[0] != '/') {
         error(conn, 400);
     }
-    string query_string;
     if (it3 + 1 < it2) {
-        query_string = string(it3 + 1, it2);
+        r.query_string = string(it3 + 1, it2);
+    } else {
+        r.query_string = "";
     }
-    string protocol(it2 + 1, s.end());
-    if (protocol != "HTTP/1.0" && protocol != "HTTP/1.1") {
+    r.protocol = string(it2 + 1, lines[0].end());
+    if (r.protocol != "HTTP/1.0" && r.protocol != "HTTP/1.1") {
         error(conn, 505);
         return -1;
     }
-    HTTPRequest &r = any_cast<HTTPRequest &>(conn->data);
-    r.method = method;
-    r.uri = s;
-    r.path = path;
-    r.query_string = query_string;
-    r.protocol = protocol;
     for (size_t i = 1; i < lines.size(); i++) {
         it = find(lines[i].begin(), lines[i].end(), ':');
         if (it == lines[i].end()) {

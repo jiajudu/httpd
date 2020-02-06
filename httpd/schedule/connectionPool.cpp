@@ -1,17 +1,20 @@
 #include "schedule/connectionPool.h"
 #include "auxiliary/error.h"
 #include "schedule/poller.h"
+#include <iostream>
 #include <poll.h>
+#include <stdio.h>
 ConnectionPool::ConnectionPool() {
     eh = make_shared<EventHandler>();
     eh->read = bind(&ConnectionPool::read_callback, this, _1);
     eh->write = bind(&ConnectionPool::write_callback, this, _1);
     eh->error = bind(&ConnectionPool::error_callback, this, _1);
-    eh->hang_up = bind(&ConnectionPool::hang_up_callback, this, _1);
+    eh->close = bind(&ConnectionPool::close_callback, this, _1);
 }
 void ConnectionPool::add_connection(shared_ptr<Connection> connection,
                                     shared_ptr<ConnectionEvent> event) {
     conns[connection->get_fd()] = make_pair(connection, event);
+    connection->pool = shared_from_this();
     multiplexer->add_fd(connection->get_fd(), true, false, eh);
     if (event->onConnection) {
         event->onConnection(connection);
@@ -43,14 +46,14 @@ void ConnectionPool::error_callback(int fd) {
     }
     conn->shutdown();
 }
-void ConnectionPool::hang_up_callback(int fd) {
+void ConnectionPool::close_callback(int fd) {
     shared_ptr<Connection> conn = conns[fd].first;
     conn->close();
 }
 void ConnectionPool::onClose(shared_ptr<Connection> _c) {
+    shared_ptr<ConnectionEvent> event = conns[_c->get_fd()].second;
     conns.erase(_c->get_fd());
     multiplexer->del_fd(_c->get_fd());
-    shared_ptr<ConnectionEvent> event = conns[_c->get_fd()].second;
     if (event->onDisconnect) {
         event->onDisconnect(_c);
     }

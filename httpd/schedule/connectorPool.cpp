@@ -6,6 +6,7 @@
 ConnectorPool::ConnectorPool() {
     eh = make_shared<EventHandler>();
     eh->write = bind(&ConnectorPool::cannect_callback, this, _1);
+    eh->error = bind(&ConnectorPool::error_callback, this, _1);
 }
 void ConnectorPool::connect(
     string &ip, uint16_t port,
@@ -37,6 +38,14 @@ void ConnectorPool::cannect_callback(int fd) {
     } else {
         onError(make_shared<Connection>(socket));
     }
+}
+void ConnectorPool::error_callback(int fd) {
+    multiplexer->del_fd(fd);
+    auto socket = conns[fd].socket;
+    auto onSuccess = conns[fd].onSuccess;
+    auto onError = conns[fd].onError;
+    conns.erase(fd);
+    onError(make_shared<Connection>(socket));
 }
 size_t ConnectorPool::size() {
     return conns.size();

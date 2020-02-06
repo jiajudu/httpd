@@ -36,14 +36,16 @@ void Poller::read() {
                     eh->error(fd);
                 }
             } else {
-                if ((pfd.revents & POLLIN) && eh->read) {
+                if ((pfd.revents & POLLHUP) && (!(pfd.revents & POLLIN)) &&
+                    eh->close) {
+                    eh->close(fd);
+                }
+                if (((pfd.revents & POLLIN) || (pfd.revents & POLLRDHUP)) &&
+                    eh->read) {
                     eh->read(fd);
                 }
                 if ((pfd.revents & POLLOUT) && eh->write) {
                     eh->write(fd);
-                }
-                if ((pfd.revents & POLLRDHUP) && eh->hang_up) {
-                    eh->hang_up(fd);
                 }
             }
         }
