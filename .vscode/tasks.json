@@ -3,10 +3,7 @@
         {
             "type": "shell",
             "label": "g++ build active file",
-            "command": "./build.sh",
-            "options": {
-                "cwd": "${workspaceFolder}/httpd/"
-            }
+            "command": "./make.sh",
         }
     ],
     "version": "2.0.0"

@@ -15,7 +15,3 @@ void Service::onDisconnect(shared_ptr<Connection> conn) {
 void Service::init(shared_ptr<Multiplexer> multiplexer) {
     (void)multiplexer;
 }
-any &Service::tl() {
-    thread_local any a;
-    return a;
-}

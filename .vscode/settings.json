@@ -26,7 +26,8 @@
         "streambuf": "cpp",
         "unordered_set": "cpp",
         "istream": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "glob.h": "c"
     },
     "python.pythonPath": "/usr/bin/python3"
 }

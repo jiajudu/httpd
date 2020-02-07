@@ -1,4 +1,5 @@
 #pragma once
+#include "http/request.h"
 #include "net/schedule/connectionPool.h"
 #include "net/schedule/multiplexer.h"
 #include "net/util/std.h"
@@ -55,15 +56,18 @@ public:
 };
 class FastCGI {
 public:
-    FastCGI(shared_ptr<Multiplexer> _m, string &ip, uint16_t port);
-    void submit(FastCGITask task, shared_ptr<Connection> _c);
+    FastCGI(shared_ptr<Multiplexer> _m, const string &_fcgi_host,
+            uint16_t _fcgi_port, const string &_root);
+    void process_request(shared_ptr<Connection> conn, HTTPRequest &r);
 
 private:
     shared_ptr<Multiplexer> m;
-    string fcgi_ip;
+    string fcgi_host;
     uint16_t fcgi_port;
+    string root;
     uint16_t counter = 1;
     unordered_map<uint16_t, FastCGITask> tasks;
+    void set_header2env();
     void onConnectionEstablished(shared_ptr<Connection> conn, uint16_t id);
     void onConnectionError(shared_ptr<Connection> conn, uint16_t id);
     void onMessage(shared_ptr<Connection> conn, string &message, uint16_t id);
@@ -73,4 +77,5 @@ private:
     void sendStdins(shared_ptr<Connection> _conn, uint16_t id,
                     vector<string> &ps);
     size_t decode(char *s_buf, size_t n_buf);
+    unordered_map<string, string> header2env;
 };

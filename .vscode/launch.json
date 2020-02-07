@@ -8,11 +8,9 @@
             "name": "g++ build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/httpd/httpd",
+            "program": "${workspaceFolder}/build/bin/httpd",
             "args": [
-                "http",
-                "reactor",
-                "1234"
+                "data/config/default",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

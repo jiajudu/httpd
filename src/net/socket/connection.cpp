@@ -4,6 +4,8 @@
 #include "net/schedule/timerPool.h"
 #include "net/util/error.h"
 #include "net/util/tm.h"
+#include <sys/sendfile.h>
+#include <unistd.h>
 Connection::Connection(shared_ptr<Socket> _socket)
     : socket(_socket), to_close(false), closed(false) {
     buf_recv = make_shared<Buffer>();
@@ -16,6 +18,9 @@ size_t Connection::send(const string &s) {
         pool->onSendBegin(shared_from_this());
     }
     return s.size();
+}
+void Connection::sendfile(int fd) {
+    sendfile_fd = fd;
 }
 size_t Connection::recv(string &s) {
     return buf_recv->read([&](char *s_buf, size_t n_buf) -> size_t {
@@ -30,13 +35,31 @@ size_t Connection::recv(string &s) {
 }
 void Connection::non_blocking_send() {
     bool has_content = buf_send->size() > 0;
-    buf_send->read([this](char *s, size_t n) -> size_t {
-        return socket->send(s, n, Socket::message_dont_wait);
-    });
-    if (pool && has_content && buf_send->size() == 0) {
-        pool->onSendComplete(shared_from_this());
+    if (has_content) {
+        buf_send->read([this](char *s, size_t n) -> size_t {
+            return socket->send(s, n, Socket::message_dont_wait);
+        });
+        if (pool && has_content && buf_send->size() == 0 && sendfile_fd < 0) {
+            pool->onSendComplete(shared_from_this());
+        }
+    } else if (sendfile_fd >= 0) {
+        ssize_t ret = ::sendfile(socket->get_fd(), sendfile_fd, NULL, 16384);
+        while (ret >= 0) {
+            if (ret == 0) {
+                ::close(sendfile_fd);
+                sendfile_fd = -1;
+                if (pool) {
+                    pool->onSendComplete(shared_from_this());
+                }
+                break;
+            }
+            ret = ::sendfile(socket->get_fd(), sendfile_fd, NULL, 16384);
+        }
+        if (ret < 0 && ret != EAGAIN) {
+            syscall_error();
+        }
     }
-    if (buf_send->size() == 0 && to_close) {
+    if (!(has_content_to_send()) && to_close) {
         closed = true;
         if (pool) {
             pool->onClose(shared_from_this());
@@ -94,7 +117,7 @@ int Connection::get_fd() const {
     return socket->get_fd();
 }
 bool Connection::has_content_to_send() const {
-    return buf_send->size() > 0;
+    return buf_send->size() > 0 || sendfile_fd >= 0;
 }
 bool Connection::active() const {
     return !to_close && !closed;

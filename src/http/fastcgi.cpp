@@ -1,4 +1,5 @@
 #include "http/fastcgi.h"
+#include "http/error.h"
 #include "net/schedule/connectorPool.h"
 #include "net/util/error.h"
 #include <string.h>
@@ -48,21 +49,83 @@ void FastCGITask::add_env(const string &key, const string &value) {
 void FastCGITask::add_content(const string &c) {
     stdins.push_back(c);
 }
-FastCGI::FastCGI(shared_ptr<Multiplexer> _m, string &ip, uint16_t port)
-    : m(_m), fcgi_ip(ip), fcgi_port(port) {
+FastCGI::FastCGI(shared_ptr<Multiplexer> _m, const string &_fcgi_host,
+                 uint16_t _fcgi_port, const string &_root)
+    : m(_m), fcgi_host(_fcgi_host), fcgi_port(_fcgi_port), root(_root) {
+    set_header2env();
 }
-void FastCGI::submit(FastCGITask task, shared_ptr<Connection> _c) {
+void FastCGI::set_header2env() {
+    header2env["Host"] = "HTTP_HOST";
+    header2env["Connection"] = "HTTP_CONNECTION";
+    header2env["Cache-Control"] = "HTTP_CACHE_CONTROL";
+    header2env["Upgrade-Insecure-Requests"] = "HTTP_UPGRADE_INSECURE_REQUESTS";
+    header2env["User-Agent"] = "HTTP_USER_AGENT";
+    header2env["Sec-Fetch-User"] = "HTTP_SEC_FETCH_USER";
+    header2env["Accept"] = "HTTP_ACCEPT";
+    header2env["Sec-Fetch-Site"] = "HTTP_SEC_FETCH_SITE";
+    header2env["Sec-Fetch-Mode"] = "HTTP_SEC_FETCH_MODE";
+    header2env["Accept-Encoding"] = "HTTP_ACCEPT_ENCODING";
+    header2env["Accept-Language"] = "HTTP_ACCEPT_LANGUAGE";
+    header2env["Cookie"] = "HTTP_COOKIE";
+}
+void FastCGI::process_request(shared_ptr<Connection> conn, HTTPRequest &r) {
+    FastCGITask task;
+    for (auto &kv : r.kvs) {
+        if (header2env.find(kv.first) != header2env.end()) {
+            task.add_env(kv.first, kv.second);
+        } else {
+            fatal_error((string("Unexpected header ") + kv.first).c_str());
+            http_error(conn, 400);
+        }
+    }
+    task.add_env("REDIRECT_STATUS", "200");
+    task.add_env("SERVER_NAME", "_");
+    task.add_env("SERVER_PORT",
+                 to_string(conn->get_socket()->get_local_port()));
+    task.add_env("SERVER_ADDR", conn->get_socket()->get_local_ip());
+    task.add_env("REMOTE_PORT",
+                 to_string(conn->get_socket()->get_remote_port()));
+    task.add_env("REMOTE_ADDR", conn->get_socket()->get_remote_ip());
+    task.add_env("SERVER_SOFTWARE", "httpd/0.0.1");
+    task.add_env("GATEWAY_INTERFACE", "FastCGI/1.1");
+    task.add_env("REQUEST_SCHEME", "http");
+    task.add_env("DOCUMENT_ROOT", root);
+    task.add_env("DOCUMENT_URI", r.path);
+    task.add_env("REQUEST_URI", r.uri);
+    task.add_env("SCRIPT_NAME", r.path);
+    if (r.kvs.find("Content-Length") != r.kvs.end()) {
+        task.add_env("CONTENT_LENGTH", r.kvs["Content-Length"]);
+    } else {
+        task.add_env("CONTENT_LENGTH", "0");
+    }
+    task.add_env("CONTENT_TYPE", "");
+    task.add_env("REQUEST_METHOD", r.method);
+    task.add_env("QUERY_STRING", r.query_string);
+    task.add_env("SERVER_PROTOCOL", r.protocol);
+    task.add_env("SCRIPT_FILENAME", root + r.path);
+    task.add_env("FCGI_ROLE", "RESPONDER");
+    size_t ptr = 0;
+    while (ptr < r.content.size()) {
+        if (ptr + 32768 <= r.content.size()) {
+            task.add_content(string(&r.content[ptr], &r.content[32768]));
+            ptr += 32768;
+        } else {
+            task.add_content(string(
+                &r.content[ptr], &r.content[ptr] + (r.content.size() - ptr)));
+            ptr = r.content.size();
+        }
+    }
     uint16_t id = counter;
     counter++;
     if (tasks.find(id) != tasks.end()) {
         fatal_error("The request id has been used.");
     }
     m->connectors->connect(
-        fcgi_ip, fcgi_port,
+        fcgi_host, fcgi_port,
         bind(&FastCGI::onConnectionEstablished, this, _1, id),
         bind(&FastCGI::onConnectionError, this, _1, id));
     tasks[id] = task;
-    tasks[id].http_conn = _c;
+    tasks[id].http_conn = conn;
 }
 void FastCGI::onConnectionEstablished(shared_ptr<Connection> _conn,
                                       uint16_t id) {
