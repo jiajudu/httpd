@@ -1,7 +1,7 @@
 #include "server/reactorServer.h"
 #include "auxiliary/error.h"
 #include "auxiliary/tm.h"
-#include "fastcgi/fastcgi.h"
+#include "http/fastcgi.h"
 #include "schedule/connectionPool.h"
 #include "schedule/listenerPool.h"
 #include "schedule/multiplexer.h"

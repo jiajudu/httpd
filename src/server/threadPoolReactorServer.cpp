@@ -1,7 +1,7 @@
 #include "server/threadPoolReactorServer.h"
 #include "auxiliary/blockingQueue.h"
 #include "auxiliary/error.h"
-#include "fastcgi/fastcgi.h"
+#include "http/fastcgi.h"
 #include "schedule/connectionPool.h"
 #include "schedule/eventPool.h"
 #include "schedule/multiplexer.h"

@@ -1,4 +1,4 @@
-#include "fastcgi/fastcgi.h"
+#include "http/fastcgi.h"
 #include "auxiliary/error.h"
 #include "schedule/connectorPool.h"
 #include <string.h>
@@ -96,15 +96,18 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
         if (tasks.find(request_id) == tasks.end()) {
             fatal_error("The request id is invalid.");
         }
+        FastCGITask &t = tasks[request_id];
         if (message_type == FCGI_STDOUT) {
-            tasks[request_id].stdin += message.substr(sizeof(FCGI_Header), len);
+            t.stdin += message.substr(sizeof(FCGI_Header), len);
         } else if (message_type == FCGI_STDERR) {
-            tasks[request_id].stderr +=
-                message.substr(sizeof(FCGI_Header), len);
+            t.stderr += message.substr(sizeof(FCGI_Header), len);
         } else if (message_type == FCGI_END_REQUEST) {
-            tasks[request_id].http_conn->send(tasks[request_id].stdin);
-            tasks[request_id].http_conn->close();
-            tasks[request_id].fcgi_conn->close();
+            if (t.stderr.size() == 0) {
+                t.http_conn->send("HTTP/1.1 200 OK\r\n");
+                t.http_conn->send(t.stdin);
+            }
+            t.http_conn->close();
+            t.fcgi_conn->close();
             tasks.erase(request_id);
         }
         _conn->recv(message);
