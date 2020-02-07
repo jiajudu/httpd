@@ -1,6 +1,6 @@
 #include "http/fastcgi.h"
-#include "auxiliary/error.h"
-#include "schedule/connectorPool.h"
+#include "net/schedule/connectorPool.h"
+#include "net/util/error.h"
 #include <string.h>
 void FastCGITask::add_env(const string &key, const string &value) {
     size_t len = key.size() + value.size() + 2;

@@ -1,7 +1,7 @@
 #pragma once
-#include "auxiliary/std.h"
-#include "schedule/connectionPool.h"
-#include "schedule/multiplexer.h"
+#include "net/schedule/connectionPool.h"
+#include "net/schedule/multiplexer.h"
+#include "net/util/std.h"
 #include <vector>
 #define FCGI_BEGIN_REQUEST 1
 #define FCGI_ABORT_REQUEST 2
