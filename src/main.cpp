@@ -4,12 +4,11 @@
 #include <memory>
 #include <string>
 int main(int argc, char **argv) {
-    if (argc != 4) {
+    if (argc != 3) {
         return 1;
     }
-    string service_name(argv[1]);
-    string server_name(argv[2]);
-    uint16_t port = static_cast<uint16_t>(stoi(string(argv[3])));
+    string server_name(argv[1]);
+    uint16_t port = static_cast<uint16_t>(stoi(string(argv[2])));
     string ip("127.0.0.1");
     ServerOption server_option;
     shared_ptr<Service> service = make_shared<HTTP>();

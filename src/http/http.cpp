@@ -27,7 +27,7 @@ size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
     }
 }
 HTTP::HTTP() {
-    cwd = string("/root/Documents/project/httpd/www");
+    cwd = string("/root/Documents/project/httpd/data/www");
     set_header2env();
 }
 void HTTP::set_header2env() {
