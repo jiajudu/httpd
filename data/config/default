@@ -1,4 +1,5 @@
 listen 1234
+log /root/Documents/project/httpd/data/log/httpd.log
 concurrence reactor
 root /root/Documents/project/httpd/data/www
 index index.html

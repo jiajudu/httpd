@@ -2,6 +2,7 @@
 #include "http/config.h"
 #include "http/fastcgi.h"
 #include "http/request.h"
+#include "net/logging/logger.h"
 #include "net/service/service.h"
 #include "net/util/std.h"
 #include <string>
@@ -21,4 +22,5 @@ private:
     void process_file_request(shared_ptr<Connection> conn, HTTPRequest &r);
     HTTPDConfig config;
     shared_ptr<FastCGI> &fcgi();
+    shared_ptr<Logger> logger;
 };

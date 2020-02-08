@@ -22,10 +22,15 @@ size_t Buffer::write(const char *s, size_t n) {
 }
 size_t
 Buffer::read(function<size_t(char *s_buf, size_t n_buf)> decode_and_copy) {
-    size_t n = decode_and_copy(&buf[read_ptr], min(n, size()));
+    size_t n = decode_and_copy(&buf[read_ptr], size());
     read_ptr += n;
     return n;
 }
 size_t Buffer::size() const {
     return write_ptr - read_ptr;
+}
+void Buffer::swap_buf(Buffer &b) {
+    swap(buf, b.buf);
+    swap(write_ptr, b.write_ptr);
+    swap(read_ptr, b.read_ptr);
 }

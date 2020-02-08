@@ -1,6 +1,7 @@
 #include "http/http.h"
 #include "http/error.h"
 #include "http/fastcgi.h"
+#include "net/logging/loggingstream.h"
 #include "net/util/error.h"
 #include <fcntl.h>
 #include <iostream>
@@ -31,6 +32,7 @@ static size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
     }
 }
 HTTP::HTTP(HTTPDConfig &_config) : config(_config) {
+    logger = make_shared<Logger>(config.log);
 }
 void HTTP::init(shared_ptr<Multiplexer> multiplexer) {
     for (Route &route : config.routes) {
@@ -188,6 +190,9 @@ void HTTP::process_file_request(shared_ptr<Connection> conn, HTTPRequest &r) {
        << "Content-Length: " << size << "\r\n\n";
     conn->send(os.str());
     conn->sendfile(fd);
+    LOG_INFO << r.method << " " << r.uri << " " << r.protocol << " "
+             << "200"
+             << " " << size << "\n";
 }
 shared_ptr<FastCGI> &HTTP::fcgi() {
     thread_local shared_ptr<FastCGI> p;

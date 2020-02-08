@@ -1,8 +1,4 @@
 #include "http/config.h"
-// listen 1234
-// index index.html
-// route end .php fastcgi 127.0.0.1 8000
-// route all file
 HTTPDConfig parse_http_config(const string &file) {
     ifstream is(file);
     HTTPDConfig config;
@@ -17,6 +13,8 @@ HTTPDConfig parse_http_config(const string &file) {
             is >> config.root;
         } else if (key == "concurrence") {
             is >> config.concurrence;
+        } else if (key == "log") {
+            is >> config.log;
         } else if (key == "route") {
             Route route;
             string type;
