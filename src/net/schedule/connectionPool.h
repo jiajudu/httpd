@@ -4,7 +4,7 @@
 #include "net/socket/connection.h"
 #include <memory>
 #include <unordered_map>
-class Multiplexer;
+class scheduler;
 class ConnectionEvent {
 public:
     function<void(shared_ptr<Connection> conn)> onConnection = 0;
@@ -21,7 +21,7 @@ public:
     void onClose(shared_ptr<Connection> conn);
     void onSendBegin(shared_ptr<Connection> conn);
     void onSendComplete(shared_ptr<Connection> conn);
-    Multiplexer *multiplexer;
+    Scheduler *scheduler;
 
 private:
     shared_ptr<EventHandler> eh;

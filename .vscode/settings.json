@@ -27,7 +27,8 @@
         "unordered_set": "cpp",
         "istream": "cpp",
         "ratio": "cpp",
-        "glob.h": "c"
+        "glob.h": "c",
+        "numeric": "cpp"
     },
     "python.pythonPath": "/usr/bin/python3"
 }

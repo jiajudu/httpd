@@ -5,7 +5,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
-class Multiplexer;
+class Scheduler;
 class TimerPool {
 public:
     TimerPool();
@@ -15,7 +15,7 @@ public:
     void cancel(int id);
     void event(int id);
     int get_sfd();
-    Multiplexer *multiplexer;
+    Scheduler *scheduler;
 
 private:
     shared_ptr<EventHandler> eh;

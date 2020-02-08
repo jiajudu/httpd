@@ -1,5 +1,5 @@
 #include "net/schedule/timerPool.h"
-#include "net/schedule/multiplexer.h"
+#include "net/schedule/scheduler.h"
 #include "net/util/error.h"
 #include "net/util/tm.h"
 #include <sys/timerfd.h>
@@ -17,7 +17,7 @@ void TimerPool::enable_deactivation() {
     it.it_value.tv_nsec = 0;
     struct itimerspec tmp;
     timerfd_settime(sfd, 0, &it, &tmp);
-    multiplexer->add_fd(sfd, true, false, eh);
+    scheduler->add_fd(sfd, true, false, eh);
 }
 int TimerPool::set_timeout(function<void(void)> op, double seconds) {
     int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
@@ -30,7 +30,7 @@ int TimerPool::set_timeout(function<void(void)> op, double seconds) {
     struct itimerspec tmp;
     timerfd_settime(fd, 0, &it, &tmp);
     timers[fd] = op;
-    multiplexer->add_fd(fd, true, false, eh);
+    scheduler->add_fd(fd, true, false, eh);
     return fd;
 }
 void TimerPool::set_deactivation(shared_ptr<Connection> conn, int seconds) {
@@ -42,7 +42,7 @@ void TimerPool::set_deactivation(shared_ptr<Connection> conn, int seconds) {
 void TimerPool::cancel(int id) {
     if (timers.find(id) != timers.end()) {
         timers.erase(id);
-        multiplexer->del_fd(id);
+        scheduler->del_fd(id);
         close(id);
     }
 }
@@ -52,7 +52,7 @@ void TimerPool::event(int id) {
         read(id, buf, 8);
         timers[id]();
         timers.erase(id);
-        multiplexer->del_fd(id);
+        scheduler->del_fd(id);
         close(id);
     }
     if (id == sfd) {

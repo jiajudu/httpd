@@ -49,7 +49,7 @@ void FastCGITask::add_env(const string &key, const string &value) {
 void FastCGITask::add_content(const string &c) {
     stdins.push_back(c);
 }
-FastCGI::FastCGI(shared_ptr<Multiplexer> _m, const string &_fcgi_host,
+FastCGI::FastCGI(shared_ptr<Scheduler> _m, const string &_fcgi_host,
                  uint16_t _fcgi_port, const string &_root)
     : m(_m), fcgi_host(_fcgi_host), fcgi_port(_fcgi_port), root(_root) {
     set_header2env();

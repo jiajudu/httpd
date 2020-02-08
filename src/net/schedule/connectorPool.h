@@ -5,7 +5,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-class Multiplexer;
+class scheduler;
 class ConnectorPool {
 public:
     ConnectorPool();
@@ -13,7 +13,7 @@ public:
                  function<void(shared_ptr<Connection> conn)> onSuccess,
                  function<void(shared_ptr<Connection> conn)> onError);
     size_t size();
-    Multiplexer *multiplexer;
+    Scheduler *scheduler;
 
 private:
     void add_connection(shared_ptr<Connection> connection);

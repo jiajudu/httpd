@@ -1,6 +1,6 @@
 #include "net/socket/connection.h"
 #include "net/schedule/connectionPool.h"
-#include "net/schedule/multiplexer.h"
+#include "net/schedule/scheduler.h"
 #include "net/schedule/timerPool.h"
 #include "net/util/error.h"
 #include "net/util/tm.h"
@@ -66,9 +66,9 @@ void Connection::non_blocking_send() {
         }
         socket->close();
     }
-    if (pool && pool->multiplexer->timers && deactivation_seconds) {
-        pool->multiplexer->timers->set_deactivation(shared_from_this(),
-                                                    deactivation_seconds);
+    if (pool && pool->scheduler->timers && deactivation_seconds) {
+        pool->scheduler->timers->set_deactivation(shared_from_this(),
+                                                  deactivation_seconds);
     }
 }
 void Connection::non_blocking_recv() {
@@ -85,9 +85,9 @@ void Connection::non_blocking_recv() {
         }
         buf_recv->write(buf, recved);
     }
-    if (pool && pool->multiplexer->timers && deactivation_seconds) {
-        pool->multiplexer->timers->set_deactivation(shared_from_this(),
-                                                    deactivation_seconds);
+    if (pool && pool->scheduler->timers && deactivation_seconds) {
+        pool->scheduler->timers->set_deactivation(shared_from_this(),
+                                                  deactivation_seconds);
     }
 }
 int Connection::close() {
@@ -124,8 +124,8 @@ bool Connection::active() const {
 }
 void Connection::set_deactivation(int seconds) {
     deactivation_seconds = seconds;
-    if (pool && pool->multiplexer->timers && deactivation_seconds) {
-        pool->multiplexer->timers->set_deactivation(shared_from_this(),
-                                                    deactivation_seconds);
+    if (pool && pool->scheduler->timers && deactivation_seconds) {
+        pool->scheduler->timers->set_deactivation(shared_from_this(),
+                                                  deactivation_seconds);
     }
 }

@@ -1,9 +1,8 @@
 #include "net/server/reactorServer.h"
-#include "http/fastcgi.h"
 #include "net/schedule/connectionPool.h"
 #include "net/schedule/listenerPool.h"
-#include "net/schedule/multiplexer.h"
 #include "net/schedule/poller.h"
+#include "net/schedule/scheduler.h"
 #include "net/schedule/timerPool.h"
 #include "net/util/error.h"
 #include "net/util/tm.h"
@@ -14,11 +13,11 @@ ReactorServer::ReactorServer(shared_ptr<Service> _service, string &_ip,
     : Server(_service, _ip, _port, server_option) {
 }
 void ReactorServer::run() {
-    shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
-    shared_ptr<ListenerPool> listener_pool = multiplexer->listeners;
+    shared_ptr<Scheduler> scheduler = make_shared<Poller>();
+    shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
+    shared_ptr<ListenerPool> listener_pool = scheduler->listeners;
     listener = make_shared<Listener>(ip, port, 10);
-    service->init(multiplexer);
+    service->init(scheduler);
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);
@@ -45,6 +44,6 @@ void ReactorServer::run() {
             }
         });
     while (true) {
-        multiplexer->read();
+        scheduler->read();
     }
 }

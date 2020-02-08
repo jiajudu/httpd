@@ -14,7 +14,7 @@ public:
     void onMessage(shared_ptr<Connection> conn, string &input_message);
     void onSendComplete(shared_ptr<Connection> conn);
     void onDisconnect(shared_ptr<Connection> conn);
-    void init(shared_ptr<Multiplexer> multiplexer);
+    void init(shared_ptr<Scheduler> scheduler);
 
 private:
     int parse_header(shared_ptr<Connection> conn, string &s);

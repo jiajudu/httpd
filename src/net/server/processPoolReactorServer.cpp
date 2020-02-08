@@ -1,9 +1,8 @@
 #include "net/server/processPoolReactorServer.h"
-#include "http/fastcgi.h"
 #include "net/schedule/connectionPool.h"
 #include "net/schedule/eventPool.h"
-#include "net/schedule/multiplexer.h"
 #include "net/schedule/poller.h"
+#include "net/schedule/scheduler.h"
 #include "net/schedule/timerPool.h"
 #include "net/service/service.h"
 #include "net/util/error.h"
@@ -48,12 +47,12 @@ void ProcessPoolReactorServer::run() {
     }
 }
 void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
-    shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    shared_ptr<EventPool> event_pool = multiplexer->events;
-    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
-    shared_ptr<TimerPool> timer = multiplexer->timers;
+    shared_ptr<Scheduler> scheduler = make_shared<Poller>();
+    shared_ptr<EventPool> event_pool = scheduler->events;
+    shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
+    shared_ptr<TimerPool> timer = scheduler->timers;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
-    service->init(multiplexer);
+    service->init(scheduler);
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);
     };
@@ -80,6 +79,6 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
         },
         false);
     while (true) {
-        multiplexer->read();
+        scheduler->read();
     }
 }

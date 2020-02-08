@@ -18,11 +18,11 @@ void ConnectorPool::connect(
         onSuccess(make_shared<Connection>(socket));
     } else {
         conns[socket->get_fd()] = {socket, onSuccess, onError};
-        multiplexer->add_fd(socket->get_fd(), false, true, eh);
+        scheduler->add_fd(socket->get_fd(), false, true, eh);
     }
 }
 void ConnectorPool::cannect_callback(int fd) {
-    multiplexer->del_fd(fd);
+    scheduler->del_fd(fd);
     auto socket = conns[fd].socket;
     auto onSuccess = conns[fd].onSuccess;
     auto onError = conns[fd].onError;
@@ -40,7 +40,7 @@ void ConnectorPool::cannect_callback(int fd) {
     }
 }
 void ConnectorPool::error_callback(int fd) {
-    multiplexer->del_fd(fd);
+    scheduler->del_fd(fd);
     auto socket = conns[fd].socket;
     auto onSuccess = conns[fd].onSuccess;
     auto onError = conns[fd].onError;

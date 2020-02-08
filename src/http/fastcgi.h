@@ -1,7 +1,7 @@
 #pragma once
 #include "http/request.h"
 #include "net/schedule/connectionPool.h"
-#include "net/schedule/multiplexer.h"
+#include "net/schedule/scheduler.h"
 #include "net/util/std.h"
 #include <vector>
 #define FCGI_BEGIN_REQUEST 1
@@ -56,12 +56,12 @@ public:
 };
 class FastCGI {
 public:
-    FastCGI(shared_ptr<Multiplexer> _m, const string &_fcgi_host,
+    FastCGI(shared_ptr<Scheduler> _m, const string &_fcgi_host,
             uint16_t _fcgi_port, const string &_root);
     void process_request(shared_ptr<Connection> conn, HTTPRequest &r);
 
 private:
-    shared_ptr<Multiplexer> m;
+    shared_ptr<Scheduler> m;
     string fcgi_host;
     uint16_t fcgi_port;
     string root;

@@ -7,14 +7,14 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-class Multiplexer;
+class Scheduler;
 class ListenerPool : public enable_shared_from_this<ListenerPool> {
 public:
     ListenerPool();
     void add_listener(shared_ptr<Listener> listener,
                       function<void(shared_ptr<Connection>)> onConnection);
     void remove_listener(shared_ptr<Listener> listener);
-    Multiplexer *multiplexer;
+    Scheduler *scheduler;
 
 private:
     unordered_map<int, pair<shared_ptr<Listener>,

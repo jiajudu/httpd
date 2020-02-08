@@ -12,6 +12,6 @@ void Service::onSendComplete(shared_ptr<Connection> conn) {
 void Service::onDisconnect(shared_ptr<Connection> conn) {
     (void)conn;
 }
-void Service::init(shared_ptr<Multiplexer> multiplexer) {
-    (void)multiplexer;
+void Service::init(shared_ptr<Scheduler> scheduler) {
+    (void)scheduler;
 }

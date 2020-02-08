@@ -34,10 +34,10 @@ static size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
 HTTP::HTTP(HTTPDConfig &_config) : config(_config) {
     logger = make_shared<Logger>(config.log);
 }
-void HTTP::init(shared_ptr<Multiplexer> multiplexer) {
+void HTTP::init(shared_ptr<Scheduler> scheduler) {
     for (Route &route : config.routes) {
         if (route.operation == "fcgi") {
-            fcgi() = make_shared<FastCGI>(multiplexer, route.host, route.port,
+            fcgi() = make_shared<FastCGI>(scheduler, route.host, route.port,
                                           config.root);
         }
     }

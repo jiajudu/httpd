@@ -7,9 +7,9 @@
 #include "net/util/std.h"
 #include <functional>
 #include <memory>
-class Multiplexer {
+class Scheduler {
 public:
-    Multiplexer();
+    Scheduler();
     virtual void add_fd(int fd, bool event_read, bool event_write,
                         shared_ptr<EventHandler> eh) = 0;
     virtual void mod_fd(int fd, bool event_read, bool event_write) = 0;

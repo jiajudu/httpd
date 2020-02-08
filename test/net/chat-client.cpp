@@ -1,8 +1,8 @@
 #include "net/schedule/connectionPool.h"
 #include "net/schedule/connectorPool.h"
 #include "net/schedule/eventPool.h"
-#include "net/schedule/multiplexer.h"
 #include "net/schedule/poller.h"
+#include "net/schedule/scheduler.h"
 #include "net/util/blockingQueue.h"
 #include "net/util/ip.h"
 #include <fcntl.h>
@@ -23,10 +23,10 @@ int main(int argc, char **argv) {
     fcntl(0, F_SETFL, fop | O_NONBLOCK);
     string message;
     bool working = true;
-    shared_ptr<Multiplexer> multiplexer = make_shared<Poller>();
-    shared_ptr<EventPool> event_pool = multiplexer->events;
-    shared_ptr<ConnectionPool> connection_pool = multiplexer->connections;
-    shared_ptr<ConnectorPool> connector_pool = multiplexer->connectors;
+    shared_ptr<Scheduler> scheduler = make_shared<Poller>();
+    shared_ptr<EventPool> event_pool = scheduler->events;
+    shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
+    shared_ptr<ConnectorPool> connector_pool = scheduler->connectors;
     shared_ptr<Connection> c;
     event_pool->add_event(
         0,
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
         });
     cout << "Start connection\n";
     while (working) {
-        multiplexer->read();
+        scheduler->read();
     }
     return 0;
 }
