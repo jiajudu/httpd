@@ -1,5 +1,6 @@
 #include "net/server/processPoolReactorServer.h"
 #include "net/schedule/connectionPool.h"
+#include "net/schedule/epoller.h"
 #include "net/schedule/eventPool.h"
 #include "net/schedule/poller.h"
 #include "net/schedule/scheduler.h"
@@ -47,7 +48,12 @@ void ProcessPoolReactorServer::run() {
     }
 }
 void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
-    shared_ptr<Scheduler> scheduler = make_shared<Poller>();
+    shared_ptr<Scheduler> scheduler;
+    if (option.scheduler == "poll") {
+        scheduler = make_shared<Poller>();
+    } else {
+        scheduler = make_shared<EPoller>();
+    }
     shared_ptr<EventPool> event_pool = scheduler->events;
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
     shared_ptr<TimerPool> timer = scheduler->timers;

@@ -1,5 +1,6 @@
 #include "net/server/reactorServer.h"
 #include "net/schedule/connectionPool.h"
+#include "net/schedule/epoller.h"
 #include "net/schedule/listenerPool.h"
 #include "net/schedule/poller.h"
 #include "net/schedule/scheduler.h"
@@ -13,7 +14,12 @@ ReactorServer::ReactorServer(shared_ptr<Service> _service, string &_ip,
     : Server(_service, _ip, _port, server_option) {
 }
 void ReactorServer::run() {
-    shared_ptr<Scheduler> scheduler = make_shared<Poller>();
+    shared_ptr<Scheduler> scheduler;
+    if (option.scheduler == "poll") {
+        scheduler = make_shared<Poller>();
+    } else {
+        scheduler = make_shared<EPoller>();
+    }
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
     shared_ptr<ListenerPool> listener_pool = scheduler->listeners;
     listener = make_shared<Listener>(ip, port, 10);

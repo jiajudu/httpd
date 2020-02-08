@@ -11,6 +11,7 @@ public:
     int max_connection_number = 65536;
     int process_number = 16;
     int thread_number = 16;
+    string scheduler = "epoll";
 };
 class Server {
 public:
