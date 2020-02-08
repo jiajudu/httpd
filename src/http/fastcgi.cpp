@@ -67,10 +67,15 @@ void FastCGI::set_header2env() {
     header2env["Accept-Encoding"] = "HTTP_ACCEPT_ENCODING";
     header2env["Accept-Language"] = "HTTP_ACCEPT_LANGUAGE";
     header2env["Cookie"] = "HTTP_COOKIE";
+    header2env["Referer"] = "HTTP_REFERER";
+    header2env["Content-Length"] = "HTTP_CONTENT_LENGTH";
+    header2env["Origin"] = "HTTP_ORIGIN";
+    header2env["Content-Type"] = "HTTP_CONTENT_TYPE";
 }
-void FastCGI::process_request(shared_ptr<Connection> conn, HTTPRequest &r) {
-    shared_ptr<FastCGITask> task;
-    for (auto &kv : r.kvs) {
+void FastCGI::process_request(shared_ptr<Connection> conn,
+                              shared_ptr<HTTPRequest> r) {
+    shared_ptr<FastCGITask> task = make_shared<FastCGITask>();
+    for (auto &kv : r->kvs) {
         if (header2env.find(kv.first) != header2env.end()) {
             task->add_env(kv.first, kv.second);
         } else {
@@ -90,29 +95,30 @@ void FastCGI::process_request(shared_ptr<Connection> conn, HTTPRequest &r) {
     task->add_env("GATEWAY_INTERFACE", "FastCGI/1.1");
     task->add_env("REQUEST_SCHEME", "http");
     task->add_env("DOCUMENT_ROOT", root);
-    task->add_env("DOCUMENT_URI", r.path);
-    task->add_env("REQUEST_URI", r.uri);
-    task->add_env("SCRIPT_NAME", r.path);
-    if (r.kvs.find("Content-Length") != r.kvs.end()) {
-        task->add_env("CONTENT_LENGTH", r.kvs["Content-Length"]);
+    task->add_env("DOCUMENT_URI", r->path);
+    task->add_env("REQUEST_URI", r->uri);
+    task->add_env("SCRIPT_NAME", r->path);
+    if (r->kvs.find("Content-Length") != r->kvs.end()) {
+        task->add_env("CONTENT_LENGTH", r->kvs["Content-Length"]);
     } else {
         task->add_env("CONTENT_LENGTH", "0");
     }
-    task->add_env("CONTENT_TYPE", "");
-    task->add_env("REQUEST_METHOD", r.method);
-    task->add_env("QUERY_STRING", r.query_string);
-    task->add_env("SERVER_PROTOCOL", r.protocol);
-    task->add_env("SCRIPT_FILENAME", root + r.path);
+    task->add_env("CONTENT_TYPE", r->kvs["Content-Type"]);
+    task->add_env("REQUEST_METHOD", r->method);
+    task->add_env("QUERY_STRING", r->query_string);
+    task->add_env("SERVER_PROTOCOL", r->protocol);
+    task->add_env("SCRIPT_FILENAME", root + r->path);
     task->add_env("FCGI_ROLE", "RESPONDER");
     size_t ptr = 0;
-    while (ptr < r.content.size()) {
-        if (ptr + 32768 <= r.content.size()) {
-            task->add_content(string(&r.content[ptr], &r.content[32768]));
+    while (ptr < r->content.size()) {
+        if (ptr + 32768 <= r->content.size()) {
+            task->add_content(string(&r->content[ptr], &r->content[32768]));
             ptr += 32768;
         } else {
-            task->add_content(string(
-                &r.content[ptr], &r.content[ptr] + (r.content.size() - ptr)));
-            ptr = r.content.size();
+            task->add_content(
+                string(&r->content[ptr],
+                       &r->content[ptr] + (r->content.size() - ptr)));
+            ptr = r->content.size();
         }
     }
     uint16_t id = 0;
@@ -125,6 +131,7 @@ void FastCGI::process_request(shared_ptr<Connection> conn, HTTPRequest &r) {
         }
         tasks[id] = task;
         tasks[id]->http_conn = conn;
+        tasks[id]->scheduler = conn->pool->scheduler;
     }
     conn->pool->scheduler->connectors->connect(
         fcgi_host, fcgi_port,
@@ -142,7 +149,7 @@ void FastCGI::onConnectionEstablished(shared_ptr<Connection> _conn,
     task->fcgi_conn = _conn;
     shared_ptr<ConnectionEvent> ev = make_shared<ConnectionEvent>();
     ev->onMessage = bind(&FastCGI::onMessage, this, _1, _2, id);
-    _conn->pool->scheduler->connections->add_connection(_conn, ev);
+    task->scheduler->connections->add_connection(_conn, ev);
     sendBeginRequest(_conn, id);
     sendParams(_conn, id, task->envs);
     sendStdins(_conn, id, task->stdins);

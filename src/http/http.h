@@ -18,9 +18,9 @@ public:
     void init(shared_ptr<Scheduler> scheduler);
 
 private:
-    int parse_header(shared_ptr<Connection> conn, string &s);
     void process_request(shared_ptr<Connection> conn);
-    void process_file_request(shared_ptr<Connection> conn, HTTPRequest &r);
+    void process_file_request(shared_ptr<Connection> conn,
+                              shared_ptr<HTTPRequest> r);
     HTTPDConfig config;
     shared_ptr<FastCGI> fcgi;
     shared_ptr<Logger> logger;

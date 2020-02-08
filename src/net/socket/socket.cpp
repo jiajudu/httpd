@@ -114,7 +114,11 @@ int Socket::connect(const string &ip, uint16_t port, bool non_blocking) {
 ssize_t Socket::recv(char *buf, size_t size, int flag) {
     ssize_t ret = ::recv(fd, buf, size, flag);
     if (ret < 0) {
-        syscall_error();
+        if (errno != EAGAIN) {
+            syscall_error();
+        } else {
+            return 0;
+        }
     }
     return ret;
 }

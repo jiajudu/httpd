@@ -51,13 +51,15 @@ public:
     vector<string> stdins;
     shared_ptr<Connection> http_conn;
     shared_ptr<Connection> fcgi_conn;
+    Scheduler *scheduler = 0;
     string stdin;
     string stderr;
 };
 class FastCGI {
 public:
     FastCGI(const string &_fcgi_host, uint16_t _fcgi_port, const string &_root);
-    void process_request(shared_ptr<Connection> conn, HTTPRequest &r);
+    void process_request(shared_ptr<Connection> conn,
+                         shared_ptr<HTTPRequest> r);
 
 private:
     const string fcgi_host;
