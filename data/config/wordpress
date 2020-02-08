@@ -1,0 +1,7 @@
+listen 80
+log /root/Documents/project/httpd/data/log/wordpress.log
+concurrence reactor
+root /usr/share/wordpress
+index index.php
+route end .php fastcgi 127.0.0.1 9000 
+route all file

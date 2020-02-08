@@ -9,7 +9,7 @@ class scheduler;
 class ConnectorPool {
 public:
     ConnectorPool();
-    void connect(string &ip, uint16_t port,
+    void connect(const string &ip, uint16_t port,
                  function<void(shared_ptr<Connection> conn)> onSuccess,
                  function<void(shared_ptr<Connection> conn)> onError);
     size_t size();

@@ -58,7 +58,6 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
     shared_ptr<TimerPool> timer = scheduler->timers;
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
-    service->init(scheduler);
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);
     };

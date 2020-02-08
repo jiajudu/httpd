@@ -23,7 +23,6 @@ void ReactorServer::run() {
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
     shared_ptr<ListenerPool> listener_pool = scheduler->listeners;
     listener = make_shared<Listener>(ip, port, 10);
-    service->init(scheduler);
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);

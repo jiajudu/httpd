@@ -9,7 +9,7 @@ ConnectorPool::ConnectorPool() {
     eh->error = bind(&ConnectorPool::error_callback, this, _1);
 }
 void ConnectorPool::connect(
-    string &ip, uint16_t port,
+    const string &ip, uint16_t port,
     function<void(shared_ptr<Connection> conn)> onSuccess,
     function<void(shared_ptr<Connection> conn)> onError) {
     shared_ptr<Socket> socket = make_shared<Socket>(Socket::domain_INET);

@@ -49,9 +49,9 @@ void FastCGITask::add_env(const string &key, const string &value) {
 void FastCGITask::add_content(const string &c) {
     stdins.push_back(c);
 }
-FastCGI::FastCGI(shared_ptr<Scheduler> _m, const string &_fcgi_host,
-                 uint16_t _fcgi_port, const string &_root)
-    : m(_m), fcgi_host(_fcgi_host), fcgi_port(_fcgi_port), root(_root) {
+FastCGI::FastCGI(const string &_fcgi_host, uint16_t _fcgi_port,
+                 const string &_root)
+    : fcgi_host(_fcgi_host), fcgi_port(_fcgi_port), root(_root) {
     set_header2env();
 }
 void FastCGI::set_header2env() {
@@ -69,74 +69,83 @@ void FastCGI::set_header2env() {
     header2env["Cookie"] = "HTTP_COOKIE";
 }
 void FastCGI::process_request(shared_ptr<Connection> conn, HTTPRequest &r) {
-    FastCGITask task;
+    shared_ptr<FastCGITask> task;
     for (auto &kv : r.kvs) {
         if (header2env.find(kv.first) != header2env.end()) {
-            task.add_env(kv.first, kv.second);
+            task->add_env(kv.first, kv.second);
         } else {
             fatal_error((string("Unexpected header ") + kv.first).c_str());
             http_error(conn, 400);
         }
     }
-    task.add_env("REDIRECT_STATUS", "200");
-    task.add_env("SERVER_NAME", "_");
-    task.add_env("SERVER_PORT",
-                 to_string(conn->get_socket()->get_local_port()));
-    task.add_env("SERVER_ADDR", conn->get_socket()->get_local_ip());
-    task.add_env("REMOTE_PORT",
-                 to_string(conn->get_socket()->get_remote_port()));
-    task.add_env("REMOTE_ADDR", conn->get_socket()->get_remote_ip());
-    task.add_env("SERVER_SOFTWARE", "httpd/0.0.1");
-    task.add_env("GATEWAY_INTERFACE", "FastCGI/1.1");
-    task.add_env("REQUEST_SCHEME", "http");
-    task.add_env("DOCUMENT_ROOT", root);
-    task.add_env("DOCUMENT_URI", r.path);
-    task.add_env("REQUEST_URI", r.uri);
-    task.add_env("SCRIPT_NAME", r.path);
+    task->add_env("REDIRECT_STATUS", "200");
+    task->add_env("SERVER_NAME", "_");
+    task->add_env("SERVER_PORT",
+                  to_string(conn->get_socket()->get_local_port()));
+    task->add_env("SERVER_ADDR", conn->get_socket()->get_local_ip());
+    task->add_env("REMOTE_PORT",
+                  to_string(conn->get_socket()->get_remote_port()));
+    task->add_env("REMOTE_ADDR", conn->get_socket()->get_remote_ip());
+    task->add_env("SERVER_SOFTWARE", "httpd/0.0.1");
+    task->add_env("GATEWAY_INTERFACE", "FastCGI/1.1");
+    task->add_env("REQUEST_SCHEME", "http");
+    task->add_env("DOCUMENT_ROOT", root);
+    task->add_env("DOCUMENT_URI", r.path);
+    task->add_env("REQUEST_URI", r.uri);
+    task->add_env("SCRIPT_NAME", r.path);
     if (r.kvs.find("Content-Length") != r.kvs.end()) {
-        task.add_env("CONTENT_LENGTH", r.kvs["Content-Length"]);
+        task->add_env("CONTENT_LENGTH", r.kvs["Content-Length"]);
     } else {
-        task.add_env("CONTENT_LENGTH", "0");
+        task->add_env("CONTENT_LENGTH", "0");
     }
-    task.add_env("CONTENT_TYPE", "");
-    task.add_env("REQUEST_METHOD", r.method);
-    task.add_env("QUERY_STRING", r.query_string);
-    task.add_env("SERVER_PROTOCOL", r.protocol);
-    task.add_env("SCRIPT_FILENAME", root + r.path);
-    task.add_env("FCGI_ROLE", "RESPONDER");
+    task->add_env("CONTENT_TYPE", "");
+    task->add_env("REQUEST_METHOD", r.method);
+    task->add_env("QUERY_STRING", r.query_string);
+    task->add_env("SERVER_PROTOCOL", r.protocol);
+    task->add_env("SCRIPT_FILENAME", root + r.path);
+    task->add_env("FCGI_ROLE", "RESPONDER");
     size_t ptr = 0;
     while (ptr < r.content.size()) {
         if (ptr + 32768 <= r.content.size()) {
-            task.add_content(string(&r.content[ptr], &r.content[32768]));
+            task->add_content(string(&r.content[ptr], &r.content[32768]));
             ptr += 32768;
         } else {
-            task.add_content(string(
+            task->add_content(string(
                 &r.content[ptr], &r.content[ptr] + (r.content.size() - ptr)));
             ptr = r.content.size();
         }
     }
-    uint16_t id = counter;
-    counter++;
-    if (tasks.find(id) != tasks.end()) {
-        fatal_error("The request id has been used.");
+    uint16_t id = 0;
+    {
+        lock_guard<mutex> g(lock);
+        id = counter;
+        counter++;
+        if (tasks.find(id) != tasks.end()) {
+            fatal_error("The request id has been used.");
+        }
+        tasks[id] = task;
+        tasks[id]->http_conn = conn;
     }
-    m->connectors->connect(
+    conn->pool->scheduler->connectors->connect(
         fcgi_host, fcgi_port,
         bind(&FastCGI::onConnectionEstablished, this, _1, id),
         bind(&FastCGI::onConnectionError, this, _1, id));
-    tasks[id] = task;
-    tasks[id].http_conn = conn;
 }
 void FastCGI::onConnectionEstablished(shared_ptr<Connection> _conn,
                                       uint16_t id) {
     _conn->decode = bind(&FastCGI::decode, this, _1, _2);
-    tasks[id].fcgi_conn = _conn;
+    shared_ptr<FastCGITask> task;
+    {
+        lock_guard<mutex> g(lock);
+        task = tasks[id];
+    }
+    task->fcgi_conn = _conn;
     shared_ptr<ConnectionEvent> ev = make_shared<ConnectionEvent>();
     ev->onMessage = bind(&FastCGI::onMessage, this, _1, _2, id);
-    m->connections->add_connection(_conn, ev);
+    _conn->pool->scheduler->connections->add_connection(_conn, ev);
     sendBeginRequest(_conn, id);
-    sendParams(_conn, id, tasks[id].envs);
-    sendStdins(_conn, id, tasks[id].stdins);
+    sendParams(_conn, id, task->envs);
+    sendStdins(_conn, id, task->stdins);
 }
 void FastCGI::onConnectionError(shared_ptr<Connection> _conn, uint16_t id) {
     (void)_conn;
@@ -156,22 +165,29 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
         if (id != request_id) {
             fatal_error("Request id mismatch.");
         }
-        if (tasks.find(request_id) == tasks.end()) {
-            fatal_error("The request id is invalid.");
-        }
-        FastCGITask &t = tasks[request_id];
-        if (message_type == FCGI_STDOUT) {
-            t.stdin += message.substr(sizeof(FCGI_Header), len);
-        } else if (message_type == FCGI_STDERR) {
-            t.stderr += message.substr(sizeof(FCGI_Header), len);
-        } else if (message_type == FCGI_END_REQUEST) {
-            if (t.stderr.size() == 0) {
-                t.http_conn->send("HTTP/1.1 200 OK\r\n");
-                t.http_conn->send(t.stdin);
+        shared_ptr<FastCGITask> task;
+        {
+            lock_guard<mutex> g(lock);
+            if (tasks.find(request_id) == tasks.end()) {
+                fatal_error("The request id is invalid.");
             }
-            t.http_conn->close();
-            t.fcgi_conn->close();
-            tasks.erase(request_id);
+            task = tasks[id];
+        }
+        if (message_type == FCGI_STDOUT) {
+            task->stdin += message.substr(sizeof(FCGI_Header), len);
+        } else if (message_type == FCGI_STDERR) {
+            task->stderr += message.substr(sizeof(FCGI_Header), len);
+        } else if (message_type == FCGI_END_REQUEST) {
+            if (task->stderr.size() == 0) {
+                task->http_conn->send("HTTP/1.1 200 OK\r\n");
+                task->http_conn->send(task->stdin);
+            }
+            task->http_conn->close();
+            task->fcgi_conn->close();
+            {
+                lock_guard<mutex> g(lock);
+                tasks.erase(request_id);
+            }
         }
         _conn->recv(message);
     }

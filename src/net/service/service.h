@@ -11,5 +11,4 @@ public:
     virtual void onMessage(shared_ptr<Connection> conn, string &input_message);
     virtual void onSendComplete(shared_ptr<Connection> conn);
     virtual void onDisconnect(shared_ptr<Connection> conn);
-    virtual void init(shared_ptr<Scheduler> scheduler);
 };

@@ -17,8 +17,7 @@ int main(int argc, char **argv) {
     if (argc != 3) {
         exit(1);
     }
-    string ip(argv[1]);
-    uint16_t port = static_cast<uint16_t>(stoi(string(argv[2])));
+    uint16_t port = static_cast<uint16_t>(stoi(argv[2]));
     int fop = fcntl(0, F_GETFL);
     fcntl(0, F_SETFL, fop | O_NONBLOCK);
     string message;
@@ -61,7 +60,7 @@ int main(int argc, char **argv) {
         working = false;
     };
     connector_pool->connect(
-        ip, port,
+        argv[1], port,
         [&c, &connection_pool, &conn_ev](shared_ptr<Connection> conn) -> void {
             c = conn;
             cout << "Connection Success\n";

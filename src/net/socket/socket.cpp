@@ -66,7 +66,7 @@ int Socket::accept() {
         fatal_error("Protocal not implemented.");
     }
 }
-int Socket::connect(string &ip, uint16_t port, bool non_blocking) {
+int Socket::connect(const string &ip, uint16_t port, bool non_blocking) {
     int ret = 0;
     if (domain == domain_INET) {
         struct sockaddr_in sockaddr;

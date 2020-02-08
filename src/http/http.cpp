@@ -33,12 +33,9 @@ static size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
 }
 HTTP::HTTP(HTTPDConfig &_config) : config(_config) {
     logger = make_shared<Logger>(config.log);
-}
-void HTTP::init(shared_ptr<Scheduler> scheduler) {
     for (Route &route : config.routes) {
         if (route.operation == "fcgi") {
-            fcgi() = make_shared<FastCGI>(scheduler, route.host, route.port,
-                                          config.root);
+            fcgi = make_shared<FastCGI>(route.host, route.port, config.root);
         }
     }
 }
@@ -54,9 +51,8 @@ void HTTP::onMessage(shared_ptr<Connection> conn, string &input_message) {
             if (ret < 0) {
                 return;
             }
-            string c("Content-Length");
-            if (r.kvs.find(c) != r.kvs.end()) {
-                int content_length = stoi(r.kvs[c]);
+            if (r.kvs.find("Content-Length") != r.kvs.end()) {
+                int content_length = stoi(r.kvs["Content-Length"]);
                 if (content_length > 10000000) {
                     http_error(conn, 413);
                     return;
@@ -120,6 +116,9 @@ int HTTP::parse_header(shared_ptr<Connection> conn, string &s) {
     if (r.path.size() == 0 || r.path[0] != '/') {
         http_error(conn, 400);
     }
+    if (r.path == "/") {
+        r.path += config.index;
+    }
     if (it3 + 1 < it2) {
         r.query_string = string(it3 + 1, it2);
     } else {
@@ -162,7 +161,7 @@ void HTTP::process_request(shared_ptr<Connection> conn) {
     for (Route &route : config.routes) {
         if (match_route(route, r.path)) {
             if (route.operation == "fastcgi") {
-                fcgi()->process_request(conn, r);
+                fcgi->process_request(conn, r);
             } else if (route.operation == "file") {
                 process_file_request(conn, r);
             } else {
@@ -173,10 +172,7 @@ void HTTP::process_request(shared_ptr<Connection> conn) {
     }
 }
 void HTTP::process_file_request(shared_ptr<Connection> conn, HTTPRequest &r) {
-    if (r.uri == "/") {
-        r.uri += config.index;
-    }
-    string file_path = config.root + r.uri;
+    string file_path = config.root + r.path;
     struct stat st;
     int ret = stat(file_path.c_str(), &st);
     if (ret < 0) {
@@ -196,8 +192,4 @@ void HTTP::process_file_request(shared_ptr<Connection> conn, HTTPRequest &r) {
     LOG_INFO << r.method << " " << r.uri << " " << r.protocol << " "
              << "200"
              << " " << size << "\n";
-}
-shared_ptr<FastCGI> &HTTP::fcgi() {
-    thread_local shared_ptr<FastCGI> p;
-    return p;
 }

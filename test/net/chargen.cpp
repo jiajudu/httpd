@@ -25,13 +25,11 @@ int main(int argc, char **argv) {
     if (argc != 3) {
         return 1;
     }
-    string server_name(argv[1]);
-    uint16_t port = static_cast<uint16_t>(stoi(string(argv[2])));
-    string ip("127.0.0.1");
+    uint16_t port = static_cast<uint16_t>(stoi(argv[2]));
     ServerOption server_option;
     shared_ptr<Service> service = make_shared<Chargen>();
     shared_ptr<Server> server =
-        get_server(service, server_name, ip, port, server_option);
+        get_server(service, argv[1], "127.0.0.1", port, server_option);
     server->run();
     return 0;
 }

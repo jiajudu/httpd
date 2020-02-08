@@ -5,6 +5,7 @@
 #include "net/logging/logger.h"
 #include "net/service/service.h"
 #include "net/util/std.h"
+#include <mutex>
 #include <string>
 #include <unordered_map>
 class HTTP : public Service {
@@ -21,6 +22,8 @@ private:
     void process_request(shared_ptr<Connection> conn);
     void process_file_request(shared_ptr<Connection> conn, HTTPRequest &r);
     HTTPDConfig config;
-    shared_ptr<FastCGI> &fcgi();
+    shared_ptr<FastCGI> fcgi;
     shared_ptr<Logger> logger;
+    mutex lock;
+    bool initialized = false;
 };

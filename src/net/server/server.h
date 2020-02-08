@@ -28,5 +28,6 @@ protected:
     ServerOption option;
     shared_ptr<Listener> listener;
 };
-shared_ptr<Server> get_server(shared_ptr<Service> service, string &server_name,
-                              string ip, uint16_t port, ServerOption &option);
+shared_ptr<Server> get_server(shared_ptr<Service> service,
+                              const string &server_name, string ip,
+                              uint16_t port, ServerOption &option);

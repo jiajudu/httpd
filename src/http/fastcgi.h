@@ -56,17 +56,17 @@ public:
 };
 class FastCGI {
 public:
-    FastCGI(shared_ptr<Scheduler> _m, const string &_fcgi_host,
-            uint16_t _fcgi_port, const string &_root);
+    FastCGI(const string &_fcgi_host, uint16_t _fcgi_port, const string &_root);
     void process_request(shared_ptr<Connection> conn, HTTPRequest &r);
 
 private:
-    shared_ptr<Scheduler> m;
-    string fcgi_host;
-    uint16_t fcgi_port;
-    string root;
+    const string fcgi_host;
+    const uint16_t fcgi_port;
+    const string root;
+    unordered_map<string, string> header2env;
+    mutex lock;
     uint16_t counter = 1;
-    unordered_map<uint16_t, FastCGITask> tasks;
+    unordered_map<uint16_t, shared_ptr<FastCGITask>> tasks;
     void set_header2env();
     void onConnectionEstablished(shared_ptr<Connection> conn, uint16_t id);
     void onConnectionError(shared_ptr<Connection> conn, uint16_t id);
@@ -77,5 +77,4 @@ private:
     void sendStdins(shared_ptr<Connection> _conn, uint16_t id,
                     vector<string> &ps);
     size_t decode(char *s_buf, size_t n_buf);
-    unordered_map<string, string> header2env;
 };

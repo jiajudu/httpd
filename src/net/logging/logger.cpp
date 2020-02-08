@@ -4,7 +4,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 Logger::Logger(const string &_path, int _level) : level(_level) {
-    fd = open(_path.c_str(), O_WRONLY | O_APPEND | O_CREAT);
+    fd = ::open(_path.c_str(), O_WRONLY | O_APPEND | O_CREAT,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd < 0) {
         syscall_error();
     }

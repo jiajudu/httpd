@@ -3,5 +3,5 @@ log /root/Documents/project/httpd/data/log/httpd.log
 concurrence reactor
 root /root/Documents/project/httpd/data/www
 index index.html
-route end .php fastcgi 127.0.0.1 8000 
+route end .php fastcgi 127.0.0.1 9000 
 route all file

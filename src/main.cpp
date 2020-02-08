@@ -9,12 +9,11 @@ int main(int argc, char **argv) {
         return 1;
     }
     HTTPDConfig config = parse_http_config(argv[1]);
-    string server_name(config.concurrence);
     uint16_t port = config.port;
     ServerOption server_option;
     shared_ptr<Service> service = make_shared<HTTP>(config);
     shared_ptr<Server> server =
-        get_server(service, server_name, "0.0.0.0", port, server_option);
+        get_server(service, config.concurrence, "0.0.0.0", port, server_option);
     server->run();
     return 0;
 }
