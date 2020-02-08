@@ -82,6 +82,7 @@ void HTTP::onMessage(shared_ptr<Connection> conn, string &input_message) {
             r.content = input_message;
             r.parse_status = 0;
             process_request(conn);
+            conn->decode = bind(http_decoder, _1, _2, 65536, 0);
         }
         conn->recv(input_message);
     }
@@ -187,7 +188,9 @@ void HTTP::process_file_request(shared_ptr<Connection> conn, HTTPRequest &r) {
     int fd = open(file_path.c_str(), O_RDONLY);
     ostringstream os;
     os << "HTTP/1.1 200 OK\r\n"
-       << "Content-Length: " << size << "\r\n\n";
+       << "Content-Length: " << size << "\r\n"
+       << "Connection: Keep-Alive\r\n"
+       << "Keep-Alive: timeout=5, max=1000\r\n\n";
     conn->send(os.str());
     conn->sendfile(fd);
     LOG_INFO << r.method << " " << r.uri << " " << r.protocol << " "
