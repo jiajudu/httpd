@@ -31,3 +31,13 @@ string get_time_fmt() {
     }
     return string(buf, buf + len);
 }
+string get_time_fmt_gmt() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    time_t nowtime = tv.tv_sec;
+    struct tm tm_time;
+    gmtime_r(&nowtime, &tm_time);
+    char buf[128];
+    size_t len = strftime(buf, 128, "%c %Z", &tm_time);
+    return string(buf, buf + len);
+}

@@ -15,7 +15,8 @@ HTTP::HTTP(HTTPDConfig &_config) : config(_config) {
     logger = make_shared<Logger>(config.log);
     for (Route &route : config.routes) {
         if (route.operation == "fastcgi") {
-            fcgi = make_shared<FastCGI>(route.host, route.port, config.root);
+            fcgi = make_shared<FastCGI>(route.host, route.port, config.root,
+                                        logger);
         }
     }
 }
@@ -32,7 +33,7 @@ void HTTP::onMessage(shared_ptr<Connection> conn, string &input_message) {
             if (ret < 0) {
                 return;
             }
-            if (d.r->path == "/") {
+            if (d.r->path.back() == '/') {
                 d.r->path += config.index;
             }
             if (d.r->kvs.find("Content-Length") != d.r->kvs.end()) {

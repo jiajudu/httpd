@@ -1,5 +1,6 @@
 #pragma once
 #include "http/request.h"
+#include "net/logging/logger.h"
 #include "net/schedule/connectionPool.h"
 #include "net/schedule/scheduler.h"
 #include "net/util/std.h"
@@ -57,7 +58,8 @@ public:
 };
 class FastCGI {
 public:
-    FastCGI(const string &_fcgi_host, uint16_t _fcgi_port, const string &_root);
+    FastCGI(const string &_fcgi_host, uint16_t _fcgi_port, const string &_root,
+            shared_ptr<Logger> _logger);
     void process_request(shared_ptr<Connection> conn,
                          shared_ptr<HTTPRequest> r);
 
@@ -79,4 +81,5 @@ private:
     void sendStdins(shared_ptr<Connection> _conn, uint16_t id,
                     vector<string> &ps);
     size_t decode(char *s_buf, size_t n_buf);
+    shared_ptr<Logger> logger;
 };

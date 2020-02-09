@@ -9,3 +9,4 @@
 #include <vector>
 struct timeval get_time();
 string get_time_fmt();
+string get_time_fmt_gmt();

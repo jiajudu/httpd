@@ -1,5 +1,7 @@
 #include "http/fastcgi.h"
 #include "http/error.h"
+#include "http/parser.h"
+#include "net/logging/loggingstream.h"
 #include "net/schedule/connectorPool.h"
 #include "net/util/error.h"
 #include <iostream>
@@ -51,8 +53,9 @@ void FastCGITask::add_content(const string &c) {
     stdins.push_back(c);
 }
 FastCGI::FastCGI(const string &_fcgi_host, uint16_t _fcgi_port,
-                 const string &_root)
-    : fcgi_host(_fcgi_host), fcgi_port(_fcgi_port), root(_root) {
+                 const string &_root, shared_ptr<Logger> _logger)
+    : fcgi_host(_fcgi_host), fcgi_port(_fcgi_port), root(_root),
+      logger(_logger) {
     set_header2env();
 }
 void FastCGI::set_header2env() {
@@ -104,7 +107,6 @@ void FastCGI::process_request(shared_ptr<Connection> conn,
     task->add_env("QUERY_STRING", r->query_string);
     task->add_env("SERVER_PROTOCOL", r->protocol);
     task->add_env("SCRIPT_FILENAME", root + r->path);
-    // task->add_env("FCGI_ROLE", "RESPONDER");
     size_t ptr = 0;
     while (ptr < r->content.size()) {
         if (ptr + 32768 <= r->content.size()) {
@@ -181,10 +183,10 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
         } else if (message_type == FCGI_STDERR) {
             task->stderr += message.substr(sizeof(FCGI_Header), len);
         } else if (message_type == FCGI_END_REQUEST) {
-            if (task->stderr.size() == 0) {
-                task->http_conn->send("HTTP/1.1 200 OK\r\n");
-                task->http_conn->send(task->stdin);
-            }
+            string response;
+            parse_fcgi_response(task->stdin, response);
+            task->http_conn->send(response);
+            LOG_WARN << task->stderr << "\n";
             task->http_conn->close();
             task->fcgi_conn->close();
             {

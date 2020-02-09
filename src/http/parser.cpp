@@ -2,6 +2,8 @@
 #include "http/error.h"
 #include "http/request.h"
 #include "net/util/std.h"
+#include "net/util/tm.h"
+#include <sstream>
 #include <string>
 size_t http_decoder(char *s_buf, size_t n_buf, size_t max_len,
                     size_t expected_length) {
@@ -58,15 +60,17 @@ vector<string> split2(const string &s, char c1 = '\r', char c2 = '\n') {
     string::const_iterator it = s.begin();
     while (it + 1 < s.end()) {
         string::const_iterator n = find(it, s.end(), c1);
-        if (n + 1 < s.end() && *(n + 1) == c2) {
-            if (it < n) {
-                ret.push_back(string(it, n));
+        if (n == s.end() || n + 1 == s.end()) {
+            ret.push_back(string(it, s.end()));
+            break;
+        } else {
+            if (*(n + 1) == c2) {
+                if (it < n) {
+                    ret.push_back(string(it, n));
+                }
+                it = n + 2;
             }
         }
-        if (n == s.end() || n + 1 == s.end()) {
-            break;
-        }
-        it = n + 2;
     }
     for (auto &str : ret) {
         while (str.back() == ' ') {
@@ -110,5 +114,45 @@ int parse_header(shared_ptr<Connection> conn, string &s) {
         }
         r->kvs[kv[0]] = kv[1];
     }
+    return 0;
+}
+int parse_fcgi_response(const string &s, string &out) {
+    ostringstream ss;
+    size_t a = s.find("\r\n\r\n");
+    size_t b = 0;
+    if (a == string::npos) {
+        a = s.find("\r\n\n");
+        if (a == string::npos) {
+            return -1;
+        } else {
+            b = a + 3;
+        }
+    } else {
+        b = a + 4;
+    }
+    string header = string(s.begin(), s.begin() + a);
+    vector<string> lines = split2(header);
+    vector<pair<string, string>> kvs;
+    string status = "200 OK";
+    for (string &line : lines) {
+        vector<string> kv = split(line, ':', 2);
+        if (kv[0] == "Status") {
+            status = kv[1];
+        } else {
+            kvs.push_back(make_pair(kv[0], kv[1]));
+        }
+    }
+    size_t content_length = s.size() - b;
+    ss << "HTTP/1.1 " << status << "\r\n";
+    ss << "Server: Httpd (Ubuntu)\r\n";
+    ss << "Date: " << get_time_fmt_gmt() << "\r\n";
+    ss << "Connection: keep-alive\r\n";
+    ss << "Content-Length: " << content_length << "\r\n";
+    for (auto &kv : kvs) {
+        ss << kv.first << ": " << kv.second << "\r\n";
+    }
+    ss << "\r\n";
+    ss << s.substr(b);
+    out = ss.str();
     return 0;
 }
