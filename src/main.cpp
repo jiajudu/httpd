@@ -11,6 +11,12 @@ int main(int argc, char **argv) {
     HTTPDConfig config = parse_http_config(argv[1]);
     uint16_t port = config.port;
     ServerOption server_option;
+    if (config.concurrence == "threadPoolReactor") {
+        server_option.thread_number = config.concurrence_number;
+    }
+    if (config.concurrence == "processPoolReactor") {
+        server_option.process_number = config.concurrence_number;
+    }
     shared_ptr<Service> service = make_shared<HTTP>(config);
     shared_ptr<Server> server =
         get_server(service, config.concurrence, "0.0.0.0", port, server_option);

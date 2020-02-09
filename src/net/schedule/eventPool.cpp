@@ -18,7 +18,7 @@ void EventPool::event(int fd) {
     if (ops.find(fd) != ops.end()) {
         if (ops[fd].first) {
             eventfd_t e;
-            eventfd_read(ops[fd].first, &e);
+            eventfd_read(fd, &e);
         }
         ops[fd].second();
     }

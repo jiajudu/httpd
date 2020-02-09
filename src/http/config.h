@@ -8,6 +8,7 @@
 class HTTPDConfig {
 public:
     string concurrence = "reactor";
+    int concurrence_number = 4;
     uint16_t port = 80;
     string log = "/var/log/httpd.log";
     int log_level = 3;
