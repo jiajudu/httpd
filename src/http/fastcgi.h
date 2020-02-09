@@ -48,6 +48,7 @@ class FastCGITask {
 public:
     void add_env(const string &key, const string &value);
     void add_content(const string &c);
+    shared_ptr<HTTPRequest> request;
     vector<string> envs;
     vector<string> stdins;
     shared_ptr<Connection> http_conn;
@@ -69,7 +70,6 @@ private:
     const string root;
     unordered_map<string, string> header2env;
     mutex lock;
-    uint16_t counter = 1;
     unordered_map<uint16_t, shared_ptr<FastCGITask>> tasks;
     void set_header2env();
     void onConnectionEstablished(shared_ptr<Connection> conn, uint16_t id);

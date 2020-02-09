@@ -116,7 +116,7 @@ int parse_header(shared_ptr<Connection> conn, string &s) {
     }
     return 0;
 }
-int parse_fcgi_response(const string &s, string &out) {
+size_t parse_fcgi_response(const string &s, string &out) {
     ostringstream ss;
     size_t a = s.find("\r\n\r\n");
     size_t b = 0;
@@ -154,5 +154,5 @@ int parse_fcgi_response(const string &s, string &out) {
     ss << "\r\n";
     ss << s.substr(b);
     out = ss.str();
-    return 0;
+    return content_length;
 }

@@ -88,14 +88,15 @@ void HTTP::process_file_request(shared_ptr<Connection> conn,
         return;
     }
     off_t size = st.st_size;
-    // struct timespec last_modification = st.st_mtim;
     int fd = open(file_path.c_str(), O_RDONLY);
-    ostringstream os;
-    os << "HTTP/1.1 200 OK\r\n"
-       << "Content-Length: " << size << "\r\n"
-       << "Connection: Keep-Alive\r\n"
-       << "Keep-Alive: timeout=5, max=1000\r\n\n";
-    conn->send(os.str());
+    ostringstream ss;
+    ss << "HTTP/1.1 200 OK\r\n";
+    ss << "Server: Httpd (Ubuntu)\r\n";
+    ss << "Date: " << get_time_fmt_gmt() << "\r\n";
+    ss << "Connection: keep-alive\r\n";
+    ss << "Content-Length: " << size << "\r\n";
+    ss << "\r\n";
+    conn->send(ss.str());
     conn->sendfile(fd);
     LOG_INFO << r->method << " " << r->uri << " " << r->protocol << " "
              << "200"

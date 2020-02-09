@@ -122,13 +122,13 @@ void FastCGI::process_request(shared_ptr<Connection> conn,
     uint16_t id = 0;
     {
         lock_guard<mutex> g(lock);
-        id = counter;
-        counter++;
-        if (tasks.find(id) != tasks.end()) {
-            fatal_error("The request id has been used.");
+        id = 1;
+        while (tasks.find(id) != tasks.end()) {
+            id++;
         }
         tasks[id] = task;
         tasks[id]->http_conn = conn;
+        tasks[id]->request = r;
         tasks[id]->scheduler = conn->pool->scheduler;
     }
     conn->pool->scheduler->connectors->connect(
@@ -184,9 +184,15 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
             task->stderr += message.substr(sizeof(FCGI_Header), len);
         } else if (message_type == FCGI_END_REQUEST) {
             string response;
-            parse_fcgi_response(task->stdin, response);
+            size_t content_length = parse_fcgi_response(task->stdin, response);
             task->http_conn->send(response);
-            LOG_WARN << task->stderr << "\n";
+            LOG_INFO << task->request->method << " " << task->request->uri
+                     << " " << task->request->protocol << " "
+                     << "200"
+                     << " " << content_length << "\n";
+            if (task->stderr.size() > 0) {
+                LOG_WARN << task->stderr << "\n";
+            }
             task->http_conn->close();
             task->fcgi_conn->close();
             {
