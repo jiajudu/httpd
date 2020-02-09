@@ -10,6 +10,9 @@
 class ConnectionPool;
 class Connection : public enable_shared_from_this<Connection> {
 public:
+    Connection(shared_ptr<Socket> socket, const string &local_ip,
+               const uint16_t local_port, const string &remote_ip,
+               const uint16_t remote_port);
     Connection(shared_ptr<Socket> socket);
     size_t send(const string &s);
     void sendfile(int fd);
@@ -28,6 +31,10 @@ public:
     time_t deactivation_time = LONG_MAX;
     void set_deactivation(int seconds);
     shared_ptr<ConnectionPool> pool;
+    const string local_ip;
+    const uint16_t local_port;
+    const string remote_ip;
+    const uint16_t remote_port;
 
 private:
     shared_ptr<Socket> socket;

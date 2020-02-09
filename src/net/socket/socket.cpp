@@ -36,8 +36,6 @@ int Socket::bind(string &ip, uint16_t port) {
         if (ret < 0) {
             syscall_error();
         }
-        local_ip = ip;
-        local_port = port;
     } else {
         fatal_error("Protocal not implemented.");
     }
@@ -50,7 +48,7 @@ int Socket::listen(int backlog) {
     }
     return ret;
 }
-int Socket::accept() {
+int Socket::accept(string &remote_ip, uint16_t &remote_port) {
     if (domain == domain_INET) {
         struct sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
@@ -136,21 +134,46 @@ int Socket::close() {
     }
     return ret;
 }
+void Socket::reuse_addr() {
+    int v = 1;
+    int ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(int));
+    if (ret < 0) {
+        syscall_error();
+    }
+}
+void Socket::get_name(string &local_ip, uint16_t &local_port) {
+    if (domain == domain_INET) {
+        struct sockaddr_in addr;
+        socklen_t addrlen = sizeof(addr);
+        int ret = getsockname(fd, reinterpret_cast<struct sockaddr *>(&addr),
+                              &addrlen);
+        if (ret < 0) {
+            syscall_error();
+        }
+        local_ip = inet_ntos(addr.sin_addr.s_addr);
+        local_port = ntohs(addr.sin_port);
+    } else {
+        fatal_error("Protocal not implemented.");
+    }
+}
+void Socket::get_peer_name(string &remote_ip, uint16_t &remote_port) {
+    if (domain == domain_INET) {
+        struct sockaddr_in addr;
+        socklen_t addrlen = sizeof(addr);
+        int ret = getpeername(fd, reinterpret_cast<struct sockaddr *>(&addr),
+                              &addrlen);
+        if (ret < 0) {
+            syscall_error();
+        }
+        remote_ip = inet_ntos(addr.sin_addr.s_addr);
+        remote_port = ntohs(addr.sin_port);
+    } else {
+        fatal_error("Protocal not implemented.");
+    }
+}
 int Socket::get_domain() const {
     return domain;
 }
 int Socket::get_fd() const {
     return fd;
-}
-string Socket::get_local_ip() const {
-    return local_ip;
-}
-uint16_t Socket::get_local_port() const {
-    return local_port;
-}
-string Socket::get_remote_ip() const {
-    return remote_ip;
-}
-uint16_t Socket::get_remote_port() const {
-    return remote_port;
 }

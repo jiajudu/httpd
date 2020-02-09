@@ -10,6 +10,6 @@ void syscall_error() {
     exit(1);
 }
 void fatal_error(const char *s) {
-    printf("Agreement error: %s\n", s);
+    printf("Fatal error: %s\n", s);
     exit(1);
 }

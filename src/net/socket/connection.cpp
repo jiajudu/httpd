@@ -6,8 +6,18 @@
 #include "net/util/tm.h"
 #include <sys/sendfile.h>
 #include <unistd.h>
+Connection::Connection(shared_ptr<Socket> _socket, const string &_local_ip,
+                       const uint16_t _local_port, const string &_remote_ip,
+                       const uint16_t _remote_port)
+    : local_ip(_local_ip), local_port(_local_port), remote_ip(_remote_ip),
+      remote_port(_remote_port), socket(_socket), to_close(false),
+      closed(false) {
+    buf_recv = make_shared<Buffer>();
+    buf_send = make_shared<Buffer>();
+}
 Connection::Connection(shared_ptr<Socket> _socket)
-    : socket(_socket), to_close(false), closed(false) {
+    : local_ip(""), local_port(0), remote_ip(""), remote_port(0),
+      socket(_socket), to_close(false), closed(false) {
     buf_recv = make_shared<Buffer>();
     buf_send = make_shared<Buffer>();
 }

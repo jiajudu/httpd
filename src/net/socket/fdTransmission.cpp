@@ -53,6 +53,7 @@ void FDTransmission::send_conn(shared_ptr<Connection> conn) {
     }
 }
 shared_ptr<Connection> FDTransmission::recv_conn() {
+    // Try to send socket names in this func rather than using syscall.
     struct iovec iov[1];
     struct msghdr msg;
     char buf[8];
@@ -68,5 +69,13 @@ shared_ptr<Connection> FDTransmission::recv_conn() {
     recvmsg(fd, &msg, 0);
     int connfd = *(int *)CMSG_DATA(&cm);
     int domain = *(reinterpret_cast<int *>(buf));
-    return make_shared<Connection>(make_shared<Socket>(connfd, domain));
+    shared_ptr<Socket> socket = make_shared<Socket>(connfd, domain);
+    string local_ip;
+    uint16_t local_port;
+    string remote_ip;
+    uint16_t remote_port;
+    socket->get_name(local_ip, local_port);
+    socket->get_peer_name(remote_ip, remote_port);
+    return make_shared<Connection>(socket, local_ip, local_port, remote_ip,
+                                   remote_port);
 }

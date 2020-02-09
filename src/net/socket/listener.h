@@ -8,7 +8,7 @@
 class ListenerPool;
 class Listener : enable_shared_from_this<Listener> {
 public:
-    Listener(string &ip, uint16_t port, int backlog);
+    Listener(string &ip, uint16_t _port, int backlog);
     shared_ptr<Connection> accept();
     int close();
     int get_fd() const;
@@ -17,4 +17,5 @@ public:
 
 private:
     shared_ptr<Socket> socket;
+    uint16_t port;
 };

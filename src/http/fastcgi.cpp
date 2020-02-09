@@ -2,6 +2,7 @@
 #include "http/error.h"
 #include "net/schedule/connectorPool.h"
 #include "net/util/error.h"
+#include <iostream>
 #include <string.h>
 void FastCGITask::add_env(const string &key, const string &value) {
     size_t len = key.size() + value.size() + 2;
@@ -77,22 +78,17 @@ void FastCGI::process_request(shared_ptr<Connection> conn,
     shared_ptr<FastCGITask> task = make_shared<FastCGITask>();
     for (auto &kv : r->kvs) {
         if (header2env.find(kv.first) != header2env.end()) {
-            task->add_env(kv.first, kv.second);
-        } else {
-            fatal_error((string("Unexpected header ") + kv.first).c_str());
-            http_error(conn, 400);
+            task->add_env(header2env[kv.first], kv.second);
         }
     }
     task->add_env("REDIRECT_STATUS", "200");
     task->add_env("SERVER_NAME", "_");
-    task->add_env("SERVER_PORT",
-                  to_string(conn->get_socket()->get_local_port()));
-    task->add_env("SERVER_ADDR", conn->get_socket()->get_local_ip());
-    task->add_env("REMOTE_PORT",
-                  to_string(conn->get_socket()->get_remote_port()));
-    task->add_env("REMOTE_ADDR", conn->get_socket()->get_remote_ip());
+    task->add_env("SERVER_PORT", to_string(conn->local_port));
+    task->add_env("SERVER_ADDR", conn->local_ip);
+    task->add_env("REMOTE_PORT", to_string(conn->remote_port));
+    task->add_env("REMOTE_ADDR", conn->remote_ip);
     task->add_env("SERVER_SOFTWARE", "httpd/0.0.1");
-    task->add_env("GATEWAY_INTERFACE", "FastCGI/1.1");
+    task->add_env("GATEWAY_INTERFACE", "CGI/1.1");
     task->add_env("REQUEST_SCHEME", "http");
     task->add_env("DOCUMENT_ROOT", root);
     task->add_env("DOCUMENT_URI", r->path);
@@ -101,14 +97,14 @@ void FastCGI::process_request(shared_ptr<Connection> conn,
     if (r->kvs.find("Content-Length") != r->kvs.end()) {
         task->add_env("CONTENT_LENGTH", r->kvs["Content-Length"]);
     } else {
-        task->add_env("CONTENT_LENGTH", "0");
+        task->add_env("CONTENT_LENGTH", "");
     }
     task->add_env("CONTENT_TYPE", r->kvs["Content-Type"]);
     task->add_env("REQUEST_METHOD", r->method);
     task->add_env("QUERY_STRING", r->query_string);
     task->add_env("SERVER_PROTOCOL", r->protocol);
     task->add_env("SCRIPT_FILENAME", root + r->path);
-    task->add_env("FCGI_ROLE", "RESPONDER");
+    // task->add_env("FCGI_ROLE", "RESPONDER");
     size_t ptr = 0;
     while (ptr < r->content.size()) {
         if (ptr + 32768 <= r->content.size()) {
