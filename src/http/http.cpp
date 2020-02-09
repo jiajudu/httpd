@@ -67,7 +67,9 @@ void HTTP::process_request(shared_ptr<Connection> conn) {
     HTTPData &d = any_cast<HTTPData &>(conn->data);
     for (Route &route : config.routes) {
         if (match_route(route, d.r->path)) {
-            if (route.operation == "fastcgi") {
+            if (route.operation == "memory") {
+                process_memory_request(conn, d.r, route.host);
+            } else if (route.operation == "fastcgi") {
                 fcgi->process_request(conn, d.r);
             } else if (route.operation == "file") {
                 process_file_request(conn, d.r);
@@ -101,4 +103,11 @@ void HTTP::process_file_request(shared_ptr<Connection> conn,
     LOG_INFO << r->method << " " << r->uri << " " << r->protocol << " "
              << "200"
              << " " << size << "\n";
+}
+void HTTP::process_memory_request(shared_ptr<Connection> conn,
+                                  shared_ptr<HTTPRequest> r, const string &v) {
+    (void)r;
+    string s = "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Length: " +
+               to_string(v.size()) + "\r\n\r\n" + v;
+    conn->send(s);
 }

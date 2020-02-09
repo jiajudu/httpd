@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/httpd",
             "args": [
-                "data/config/wordpress",
+                "data/config/webbench",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

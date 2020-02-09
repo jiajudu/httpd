@@ -5,6 +5,8 @@ bool match_route(const Route &route, const string &url) {
     } else if (route.type == 1) {
         return url.rfind(route.pattern) == url.size() - route.pattern.size();
     } else if (route.type == 2) {
+        return route.pattern == url;
+    } else if (route.type == 3) {
         return true;
     } else {
         return false;

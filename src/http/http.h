@@ -21,6 +21,8 @@ private:
     void process_request(shared_ptr<Connection> conn);
     void process_file_request(shared_ptr<Connection> conn,
                               shared_ptr<HTTPRequest> r);
+    void process_memory_request(shared_ptr<Connection> conn,
+                                shared_ptr<HTTPRequest> r, const string& v);
     HTTPDConfig config;
     shared_ptr<FastCGI> fcgi;
     shared_ptr<Logger> logger;

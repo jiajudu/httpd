@@ -1,0 +1,7 @@
+listen 80
+log /root/Documents/project/httpd/data/log/webbench.log
+log_level fatal
+concurrence reactor
+root /root/Documents/project/httpd/data/www
+index index.html
+route match /index.html memory hello_world!
