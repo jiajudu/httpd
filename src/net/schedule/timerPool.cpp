@@ -49,7 +49,10 @@ void TimerPool::cancel(int id) {
 void TimerPool::event(int id) {
     if (timers.find(id) != timers.end()) {
         char buf[8];
-        read(id, buf, 8);
+        ssize_t ret = read(id, buf, 8);
+        if (ret < 0) {
+            syscall_error();
+        }
         timers[id]();
         timers.erase(id);
         scheduler->del_fd(id);
@@ -57,7 +60,10 @@ void TimerPool::event(int id) {
     }
     if (id == sfd) {
         char buf[8];
-        read(sfd, buf, 8);
+        ssize_t ret = read(sfd, buf, 8);
+        if (ret < 0) {
+            syscall_error();
+        }
         struct timeval tv = get_time();
         map<time_t, vector<weak_ptr<Connection>>>::iterator it;
         while (deactivations.size() > 0 &&
