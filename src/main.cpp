@@ -17,6 +17,7 @@ int main(int argc, char **argv) {
     if (config.concurrence == "processPoolReactor") {
         server_option.process_number = config.concurrence_number;
     }
+    server_option.timeout = config.timeout;
     shared_ptr<Service> service = make_shared<HTTP>(config);
     shared_ptr<Server> server =
         get_server(service, config.concurrence, "0.0.0.0", port, server_option);

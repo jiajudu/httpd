@@ -56,7 +56,8 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     }
     shared_ptr<EventPool> event_pool = scheduler->events;
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
-    shared_ptr<TimerPool> timer = scheduler->timers;
+    shared_ptr<TimerPool> timer_pool = scheduler->timers;
+    timer_pool->enable_deactivation();
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);
@@ -73,13 +74,14 @@ void ProcessPoolReactorServer::child_main(FDTransmission &fdt) {
     };
     event_pool->add_event(
         fdt.get_fd(),
-        [&fdt, connection_pool, this, timer, &conn_ev]() -> void {
+        [&fdt, connection_pool, this, &conn_ev]() -> void {
             shared_ptr<Connection> conn = fdt.recv_conn();
             if (connection_pool->size() >=
                 static_cast<size_t>(option.max_connection_number)) {
                 conn->close();
             } else {
                 connection_pool->add_connection(conn, conn_ev);
+                conn->set_deactivation(option.timeout);
             }
         },
         false);

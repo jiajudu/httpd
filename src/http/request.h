@@ -12,6 +12,7 @@ public:
     string query_string;
     string protocol;
     string content;
+    uint16_t fastcgi_id = 0;
 };
 class HTTPData {
 public:

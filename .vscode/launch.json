@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/httpd",
             "args": [
-                "data/config/webbench",
+                "data/config/default",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

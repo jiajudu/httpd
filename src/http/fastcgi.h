@@ -63,6 +63,8 @@ public:
             shared_ptr<Logger> _logger);
     void process_request(shared_ptr<Connection> conn,
                          shared_ptr<HTTPRequest> r);
+    void interrupt_request(shared_ptr<Connection> conn,
+                           shared_ptr<HTTPRequest> r);
 
 private:
     const string fcgi_host;
@@ -80,6 +82,7 @@ private:
                     vector<string> &ps);
     void sendStdins(shared_ptr<Connection> _conn, uint16_t id,
                     vector<string> &ps);
+    void sendInterrputRequest(shared_ptr<Connection> _conn, uint16_t id);
     size_t decode(char *s_buf, size_t n_buf);
     shared_ptr<Logger> logger;
 };

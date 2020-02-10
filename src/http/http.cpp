@@ -61,7 +61,10 @@ void HTTP::onSendComplete(shared_ptr<Connection> conn) {
     (void)conn;
 }
 void HTTP::onDisconnect(shared_ptr<Connection> conn) {
-    (void)conn;
+    HTTPData &d = any_cast<HTTPData &>(conn->data);
+    if (d.r && d.r->fastcgi_id > 0) {
+        fcgi->interrupt_request(conn, d.r);
+    }
 }
 void HTTP::process_request(shared_ptr<Connection> conn) {
     HTTPData &d = any_cast<HTTPData &>(conn->data);
@@ -108,7 +111,7 @@ void HTTP::process_memory_request(shared_ptr<Connection> conn,
                                   shared_ptr<HTTPRequest> r, const string &v) {
     (void)r;
     string connection = r->kvs["Connection"];
-    string s = "HTTP/1.1 200 OK\r\nConnection: " + connection + "\r\nContent-Length: " +
-               to_string(v.size()) + "\r\n\r\n" + v;
+    string s = "HTTP/1.1 200 OK\r\nConnection: " + connection +
+               "\r\nContent-Length: " + to_string(v.size()) + "\r\n\r\n" + v;
     conn->send(s);
 }

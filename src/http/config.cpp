@@ -13,11 +13,14 @@ HTTPDConfig parse_http_config(const string &file) {
             is >> config.root;
         } else if (key == "concurrence") {
             is >> config.concurrence;
-            if (config.concurrence == "threadPoolReactor" || config.concurrence == "processPoolReactor") {
+            if (config.concurrence == "threadPoolReactor" ||
+                config.concurrence == "processPoolReactor") {
                 is >> config.concurrence_number;
             }
         } else if (key == "log") {
             is >> config.log;
+        } else if (key == "timeout") {
+            is >> config.timeout;
         } else if (key == "log_level") {
             string log_level;
             is >> log_level;

@@ -131,10 +131,27 @@ void FastCGI::process_request(shared_ptr<Connection> conn,
         tasks[id]->request = r;
         tasks[id]->scheduler = conn->pool->scheduler;
     }
+    r->fastcgi_id = id;
     conn->pool->scheduler->connectors->connect(
         fcgi_host, fcgi_port,
         bind(&FastCGI::onConnectionEstablished, this, _1, id),
         bind(&FastCGI::onConnectionError, this, _1, id));
+}
+void FastCGI::interrupt_request(shared_ptr<Connection> conn,
+                                shared_ptr<HTTPRequest> r) {
+    (void)conn;
+    shared_ptr<FastCGITask> task;
+    {
+        lock_guard<mutex> g(lock);
+        if (tasks.find(r->fastcgi_id) != tasks.end()) {
+            task = tasks[r->fastcgi_id];
+            tasks.erase(r->fastcgi_id);
+        }
+    }
+    if (task) {
+        sendInterrputRequest(task->fcgi_conn, r->fastcgi_id);
+        task->fcgi_conn->close();
+    }
 }
 void FastCGI::onConnectionEstablished(shared_ptr<Connection> _conn,
                                       uint16_t id) {
@@ -178,26 +195,29 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
             }
             task = tasks[id];
         }
-        if (message_type == FCGI_STDOUT) {
-            task->stdin += message.substr(sizeof(FCGI_Header), len);
-        } else if (message_type == FCGI_STDERR) {
-            task->stderr += message.substr(sizeof(FCGI_Header), len);
-        } else if (message_type == FCGI_END_REQUEST) {
-            string response;
-            size_t content_length = parse_fcgi_response(task->stdin, response);
-            task->http_conn->send(response);
-            LOG_INFO << task->request->method << " " << task->request->uri
-                     << " " << task->request->protocol << " "
-                     << "200"
-                     << " " << content_length << "\n";
-            if (task->stderr.size() > 0) {
-                LOG_WARN << task->stderr << "\n";
-            }
-            task->http_conn->close();
-            task->fcgi_conn->close();
-            {
-                lock_guard<mutex> g(lock);
-                tasks.erase(request_id);
+        if (task && task->http_conn->active()) {
+            if (message_type == FCGI_STDOUT) {
+                task->stdin += message.substr(sizeof(FCGI_Header), len);
+            } else if (message_type == FCGI_STDERR) {
+                task->stderr += message.substr(sizeof(FCGI_Header), len);
+            } else if (message_type == FCGI_END_REQUEST) {
+                string response;
+                size_t content_length =
+                    parse_fcgi_response(task->stdin, response);
+                task->http_conn->send(response);
+                LOG_INFO << task->request->method << " " << task->request->uri
+                         << " " << task->request->protocol << " "
+                         << "200"
+                         << " " << content_length << "\n";
+                if (task->stderr.size() > 0) {
+                    LOG_WARN << task->stderr << "\n";
+                }
+                task->http_conn->close();
+                task->fcgi_conn->close();
+                {
+                    lock_guard<mutex> g(lock);
+                    tasks.erase(request_id);
+                }
             }
         }
         _conn->recv(message);
@@ -279,6 +299,20 @@ void FastCGI::sendStdins(shared_ptr<Connection> _conn, uint16_t id,
     }
     header.contentLengthB1 = static_cast<unsigned char>(0);
     header.contentLengthB0 = static_cast<unsigned char>(0);
+    memcpy(&h[0], &header, sizeof(FCGI_Header));
+    _conn->send(h);
+}
+void FastCGI::sendInterrputRequest(shared_ptr<Connection> _conn, uint16_t id) {
+    FCGI_Header header;
+    header.version = 1;
+    header.type = FCGI_ABORT_REQUEST;
+    header.requestIdB1 = static_cast<unsigned char>(id >> 8);
+    header.requestIdB0 = static_cast<unsigned char>(id & 0xff);
+    header.contentLengthB1 = 0;
+    header.contentLengthB0 = 0;
+    header.paddingLength = 0;
+    header.reserved = 0;
+    string h(sizeof(FCGI_Header), 0);
     memcpy(&h[0], &header, sizeof(FCGI_Header));
     _conn->send(h);
 }

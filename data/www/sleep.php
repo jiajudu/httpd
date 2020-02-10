@@ -3,6 +3,7 @@
   <title>hello</title>
  </head>
  <body>
- <?php echo '<p>Hello World</p>'; ?>
+ <?php sleep(20);
+echo '<p>Hello World</p>';?>
  </body>
 </html>

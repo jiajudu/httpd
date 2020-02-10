@@ -22,6 +22,8 @@ void ReactorServer::run() {
     }
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
     shared_ptr<ListenerPool> listener_pool = scheduler->listeners;
+    shared_ptr<TimerPool> timer_pool = scheduler->timers;
+    timer_pool->enable_deactivation();
     listener = make_shared<Listener>(ip, port, 10);
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
@@ -46,6 +48,7 @@ void ReactorServer::run() {
                 conn->close();
             } else {
                 connection_pool->add_connection(conn, conn_ev);
+                conn->set_deactivation(option.timeout);
             }
         });
     while (true) {

@@ -1,6 +1,7 @@
 listen 80
-log /root/Documents/project/httpd/data/log/httpd.log
-concurrence threadPoolReactor 4
+log /root/Documents/project/httpd/data/log/timeout.log
+concurrence reactor
+timeout 10
 root /root/Documents/project/httpd/data/www
 index index.html
 route end .php fastcgi 127.0.0.1 9000 

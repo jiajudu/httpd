@@ -47,7 +47,8 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
     }
     shared_ptr<EventPool> event_pool = scheduler->events;
     shared_ptr<ConnectionPool> connection_pool = scheduler->connections;
-    shared_ptr<TimerPool> timer = scheduler->timers;
+    shared_ptr<TimerPool> timer_pool = scheduler->timers;
+    timer_pool->enable_deactivation();
     shared_ptr<ConnectionEvent> conn_ev = make_shared<ConnectionEvent>();
     conn_ev->onConnection = [this](shared_ptr<Connection> conn) -> void {
         service->onConnection(conn);
@@ -75,6 +76,7 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
                     conn->close();
                 } else {
                     connection_pool->add_connection(conn, conn_ev);
+                    conn->set_deactivation(option.timeout);
                 }
             }
         });
