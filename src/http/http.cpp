@@ -107,7 +107,8 @@ void HTTP::process_file_request(shared_ptr<Connection> conn,
 void HTTP::process_memory_request(shared_ptr<Connection> conn,
                                   shared_ptr<HTTPRequest> r, const string &v) {
     (void)r;
-    string s = "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Length: " +
+    string connection = r->kvs["Connection"];
+    string s = "HTTP/1.1 200 OK\r\nConnection: " + connection + "\r\nContent-Length: " +
                to_string(v.size()) + "\r\n\r\n" + v;
     conn->send(s);
 }
