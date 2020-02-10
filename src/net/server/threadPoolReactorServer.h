@@ -15,8 +15,4 @@ public:
 
 private:
     void worker_main(Queue<shared_ptr<Connection>> &conn_q, int event_fd);
-    int active_connection_number = 0;
-    mutex lock;
-    bool increase_connection_counter();
-    bool decrease_connection_counter();
 };

@@ -7,6 +7,7 @@
 #include "net/schedule/timerPool.h"
 #include "net/util/blockingQueue.h"
 #include "net/util/error.h"
+#include <iostream>
 #include <poll.h>
 #include <sys/eventfd.h>
 #include <thread>
@@ -32,13 +33,8 @@ void ThreadPoolReactorServer::run() {
     listener = make_shared<Listener>(ip, port, 10);
     for (size_t i = 0;; i++) {
         shared_ptr<Connection> conn = listener->accept();
-        bool allow = increase_connection_counter();
-        if (allow) {
-            queues[i % option.thread_number].push(conn);
-            eventfd_write(event_fds[i % option.thread_number], 1);
-        } else {
-            conn->close();
-        }
+        queues[i % option.thread_number].push(conn);
+        eventfd_write(event_fds[i % option.thread_number], 1);
     }
 }
 void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
@@ -85,18 +81,4 @@ void ThreadPoolReactorServer::worker_main(Queue<shared_ptr<Connection>> &conn_q,
     while (true) {
         scheduler->read();
     }
-}
-bool ThreadPoolReactorServer::increase_connection_counter() {
-    lock_guard<mutex> g(mutex);
-    if (active_connection_number < option.max_connection_number) {
-        active_connection_number++;
-        return true;
-    } else {
-        return false;
-    }
-}
-bool ThreadPoolReactorServer::decrease_connection_counter() {
-    lock_guard<mutex> g(mutex);
-    active_connection_number--;
-    return true;
 }
