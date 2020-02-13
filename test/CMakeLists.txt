@@ -12,6 +12,8 @@ foreach(file chargen chat-client chat daytime discard echo limitedEcho sendfile 
     add_executable(${file} net/${file}.cpp)
     target_link_libraries(${file} net)
 endforeach(file)
+add_executable(log_test log/log_test.cpp)
+target_link_libraries(log_test net)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -Werror -Wconversion -Wold-style-cast -Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -march=native -std=c++17 -pthread -rdynamic")
