@@ -28,7 +28,8 @@
         "istream": "cpp",
         "ratio": "cpp",
         "glob.h": "c",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "iostream": "cpp"
     },
     "python.pythonPath": "/usr/bin/python3"
 }

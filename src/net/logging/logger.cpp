@@ -1,6 +1,8 @@
 #include "net/logging/logger.h"
 #include "net/util/error.h"
 #include <chrono>
+#include "net/util/tm.h"
+#include <iostream>
 #include <fcntl.h>
 #include <unistd.h>
 Logger::Logger(const string &_path, int _level) : level(_level) {
@@ -10,7 +12,10 @@ Logger::Logger(const string &_path, int _level) : level(_level) {
         syscall_error();
     }
     t = move(thread(&Logger::thread_func, this));
-    t.detach();
+}
+Logger::~Logger() {
+    exit = true;
+    t.join();
 }
 void Logger::add_log(const string &log) {
     lock_guard<mutex> g(lock);
@@ -28,6 +33,9 @@ void Logger::thread_func() {
         {
             unique_lock<mutex> g(lock);
             while (buf_input.size() == 0) {
+                if (exit) {
+                    return;
+                }
                 cv.wait_for(g, 1s);
             }
             buf_input.swap_buf(buf_output);
@@ -43,4 +51,5 @@ void Logger::thread_func() {
             });
         }
     }
+    cout << get_time_fmt() << endl;
 }

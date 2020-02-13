@@ -8,6 +8,7 @@
 class Logger {
 public:
     Logger(const string &_path, int _level = 3);
+    ~Logger();
     void add_log(const string &log);
     int get_level() const;
     void set_level(int _level);
@@ -21,5 +22,6 @@ private:
     Buffer buf_input;
     Buffer buf_output;
     thread t;
+    bool exit = false;
     void thread_func();
 };
