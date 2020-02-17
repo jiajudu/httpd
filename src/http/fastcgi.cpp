@@ -195,28 +195,32 @@ void FastCGI::onMessage(shared_ptr<Connection> _conn, string &message,
             }
             task = tasks[id];
         }
-        if (task && task->http_conn->active()) {
-            if (message_type == FCGI_STDOUT) {
-                task->stdin += message.substr(sizeof(FCGI_Header), len);
-            } else if (message_type == FCGI_STDERR) {
-                task->stderr += message.substr(sizeof(FCGI_Header), len);
-            } else if (message_type == FCGI_END_REQUEST) {
-                string response;
-                size_t content_length =
-                    parse_fcgi_response(task->stdin, response);
-                task->http_conn->send(response);
-                LOG_INFO << task->request->method << " " << task->request->uri
-                         << " " << task->request->protocol << " "
-                         << "200"
-                         << " " << content_length << "\n";
-                if (task->stderr.size() > 0) {
-                    LOG_WARN << task->stderr << "\n";
-                }
-                task->http_conn->close();
-                task->fcgi_conn->close();
-                {
-                    lock_guard<mutex> g(lock);
-                    tasks.erase(request_id);
+        if (task) {
+            shared_ptr<Connection> http_conn = task->http_conn.lock();
+            shared_ptr<HTTPRequest> request = task->request.lock();
+            if (http_conn) {
+                if (message_type == FCGI_STDOUT) {
+                    task->stdin += message.substr(sizeof(FCGI_Header), len);
+                } else if (message_type == FCGI_STDERR) {
+                    task->stderr += message.substr(sizeof(FCGI_Header), len);
+                } else if (message_type == FCGI_END_REQUEST) {
+                    string response;
+                    size_t content_length =
+                        parse_fcgi_response(task->stdin, response);
+                    http_conn->send(response);
+                    LOG_INFO << request->method << " " << request->uri << " "
+                             << request->protocol << " "
+                             << "200"
+                             << " " << content_length << "\n";
+                    if (task->stderr.size() > 0) {
+                        LOG_WARN << task->stderr << "\n";
+                    }
+                    http_conn->close();
+                    task->fcgi_conn->close();
+                    {
+                        lock_guard<mutex> g(lock);
+                        tasks.erase(request_id);
+                    }
                 }
             }
         }

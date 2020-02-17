@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/httpd",
             "args": [
-                "data/config/default",
+                "data/config/timeout",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

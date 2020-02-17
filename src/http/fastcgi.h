@@ -48,10 +48,10 @@ class FastCGITask {
 public:
     void add_env(const string &key, const string &value);
     void add_content(const string &c);
-    shared_ptr<HTTPRequest> request;
+    weak_ptr<HTTPRequest> request;
     vector<string> envs;
     vector<string> stdins;
-    shared_ptr<Connection> http_conn;
+    weak_ptr<Connection> http_conn;
     shared_ptr<Connection> fcgi_conn;
     Scheduler *scheduler = 0;
     string stdin;
